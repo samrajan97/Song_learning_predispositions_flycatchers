@@ -1,0 +1,306 @@
+## Clear memory
+rm(list = ls())
+
+## Set up packages ##
+library(readxl) 
+library(dplyr)
+library(tidyverse) 
+library(ggplot2) 
+library(glmmTMB)
+library(emmeans)
+library(DHARMa)
+library(effsize)
+library(dendextend)
+
+## Import dataset 
+syl_mds <- read_excel("~/Desktop/PF_prelimdata/LundFinalData_310822/syl_mds_final.xlsx") 
+attach(syl_mds)
+
+## Make Population2 a factor
+syl_mds$Population2 <- factor(syl_mds$Population2, levels = c("Dutch", "Swedish", "Hybrid", "Dutch egg"))
+levels(syl_mds$Population2)
+
+## LINEAR DISCRIMINANT ANALYSIS ##
+
+## Subset the swedish and dutch syllable
+data_subsyl_SN <-  subset(syl_mds, Population2 %in% c("Swedish", "Dutch"))
+data_subsyl_SN <- droplevels(data_subsyl_SN)
+
+##Need CV=TRUE to get to the confusion matrix
+lda_sylSN <- lda(Population2 ~ pc_1_value + pc_2_value + pc_3_value
+                 +pc_4_value + pc_5_value + pc_6_value+pc_7_value+pc_8_value+pc_9_value+pc_10_value,
+                 data = data_subsyl_SN, CV = TRUE)
+
+#these lines allow you to assess the classification accuracy
+ctsylSN <- table(data_subsyl_SN$Population2, lda_sylSN$class)
+ctsylSN ## Confusion matrix 
+diag(prop.table(ctsylSN, 1)) ##accuracy of LDA for each group
+
+## accuracy of lda model over all categories
+sum(diag(ctsylSN))/sum(ctsylSN)
+
+##get a new dataset with the LD1 values for all the Swedish and Dutch syllables
+####these lines project a new data set using the previous LD functions. First, you have to re-run the LDA with CV = FALSE
+##Just a trial without sub sampling the data
+lda_sylSN <- lda(formula = Population2 ~ pc_1_value + pc_2_value + pc_3_value +
+                   pc_4_value + pc_5_value + pc_6_value+pc_7_value+pc_8_value+pc_9_value+
+                   pc_10_value, data = data_subsyl_SN, CV = FALSE)
+lda_sylSN
+
+##Get posterior probabilities for Dutch and Swedish syllables
+predictsylSN.ld <- predict(object = lda_sylSN, newdata = data_subsyl_SN) ##Prediction to get the LD1 scores for all Swedish and Dutch syllables
+combined_sylSN <- cbind(data_subsyl_SN, predictsylSN.ld) ##Combine the original dataset with the posterior probabilities and LD1 scores
+
+##Create  the testing dataset of the translocated males syllables
+data_subsyl_D <-  subset(syl_mds, Population2 %in% c("Dutch egg"))
+data_subsyl_D <- droplevels(data_subsyl_D)
+
+## PART1:  projection of translocated males syllables onto Dutch and Swedish syllables
+D_sylSN.ld <- predict(object = lda_sylSN, newdata = data_subsyl_D) ##Predict posterior probabilities for the treatment group
+combined_sylD <- cbind(data_subsyl_D, D_sylSN.ld) ##Combine the dataset to get the LD1 and classification scores for all songs
+
+##Combine dataset of posterior probabilties of LD syllable scores of translocated males with Dutch and Swedish syllables
+combined_sylSND<- rbind(combined_sylSN, combined_sylD)
+
+## Summary statistics:
+## Get count and percentage for every subgroup:
+combined_sylSND%>%
+  group_by(Population2, class)%>%
+  summarise(count = n()) %>%
+  mutate(percentage = count/sum(count)*100)
+
+## CLUSTERING ANALYSIS ##
+
+##Step 1: Create a dataset with all those syllables that were classified as Dutch by the LD function from ALL three experimental groups
+misdata_SND <- combined_sylSND %>%
+  filter(class == "Dutch") 
+
+##sample sizes of how many syllables from each group is classified as Dutch
+combined_sylSND%>% group_by(Population2, class)%>% count() 
+
+## Step 2: clustering tendency
+## Create dataset with only PC scores of all songs
+misclasSND_onlypc <- misdata_SND[c(27:36), drop = FALSE]
+rownames(misclasSND_onlypc) <- misdata_SND$Song ##Attach which song rows come from 
+
+#Create a random dataset to check whether the syllable datatset differs from the random dataset
+set.seed(123)
+random_misclasSND_onlypc <- apply(misclasSND_onlypc, 2, 
+                                  function(x){runif(length(x), min(x), (max(x)))}) ##Random dataset
+random_misclasSND_onlypc <- as.data.frame(random_misclasSND_onlypc) 
+
+## Convert both datasets to euclidean distances between the different cells
+euc_misclasSND <- dist(misclasSND_onlypc, method = "euclidean", diag = TRUE)
+euc_randomSND <- dist(random_misclasSND_onlypc, method = "euclidean")
+
+##How does the data cluster between the actual and random dataset? 
+## This code takes a long time to run, run only if necessary
+hopkins(misclasSND_onlypc) #0.15= high clusterability
+hopkins(random_misclasSND_onlypc) #0.494, lower clusterability than the actual dataset
+
+##produce heat maps to see clustering tendency
+## This code takes a long time to run, run only if necessary
+plotclus_misclassSND <-fviz_dist(euc_misclasSND)
+plotclus_misclassSND
+plotclus_randommisclassSND <- fviz_dist(euc_randomSND)
+plotclus_randommisclassSND
+
+## Step 3: Heirarchical clustering analysis with different methods
+hc1 <- agnes(euc_misclasSND, method = "average") #0.895
+hc2 <- agnes(euc_misclasSND, method = "ward") ##ward is the best, 0.994
+hc3 <- agnes(euc_misclasSND, method = "complete") #0.935
+hc2$ac ##check coefficient
+
+##convert the clustering output to dendextend object for further analysis 
+dendogram <- as.dendrogram(hc2)
+
+# Step 4: What are the optimal number of clusters?
+
+#1) Global silhouette index for heirarchical clustering: run only if you want to do it again, takes a long time
+n_clust <- fviz_nbclust(misclasSND_onlypc, hcut, k.max = 1000, method = "silhouette")+
+  labs(subtitle = "Silhouette method")
+  n_clust <- n_clust$data
+  n_clust <- n_clust %>%
+  mutate(diff = y - lag(y))
+
+## Replicate Figure S2:
+optimumclustersSND <- ggplot(n_clust, aes(x = clusters, y = y)) + geom_line(aes(group=1))+
+    geom_vline(xintercept = 146) + 
+    geom_vline(xintercept = 215) + 
+    geom_vline(xintercept = 356) + theme_bw()+
+    theme(panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(legend.position = "none") +
+    labs(x = "Number of clusters (Syllable types)", y = "GSI") 
+  optimumclustersSND
+  
+## Step 5: identify syllables to syllable clusters 
+##Run everything after this again with k= 147 and k=356 to replicate Figure S3.
+
+##Create clusters based on how many clusters we should have, and append them to original dataset
+sub_grp <- cutree(dendogram, k = 215)
+cluster_SND <- mutate(misdata_SND, cluster = sub_grp)
+
+##Create a column for the total number of misclassified syllables per population
+cluster_SND <- cluster_SND %>%
+    group_by(Population2)%>%
+    mutate(totaln = n()) 
+  
+## Step 6: create a summary dataset about proportions of syllables from each experimental group in the cluster
+##First create the proportion with which each population is present in the cluster, normalised by the total number of misclassified syllables from each group
+propSND <- cluster_SND %>%
+    group_by(cluster,Population2,totaln) %>%
+    summarise(n = n()) %>%
+    mutate(prop = n/totaln)
+  
+##Now create a new column for each cluster depending on whether or not dutch egg birds have a syllable present in the cluster or not
+propSND <- propSND %>%
+    group_by(cluster) %>%
+    mutate(Present = case_when(
+      any("Dutch egg" %in% Population2) ~ "1"
+    )) %>%
+    filter(Population2 != "Dutch egg")
+propSND[is.na(propSND)] <- "0"
+propSND$Present <- as.numeric(propSND$Present) #Dutch egg syllables present or not?
+  
+##Now calculate the relative proportion of Swedish and Dutch syllables in the syllable cluster
+##now you have two rows for each cluster with a mix of syllables from the two populations
+propSND <- propSND %>%
+    group_by(cluster) %>%
+    mutate(totalprop = sum(prop), relative_prop = prop/totalprop) 
+  
+## Now for each cluster, instead of having the relative proportion of dutch and swedish syllables, calculate how 'Swedish' each cluster is:
+##create dataset with only values of Swedish proportion for each cluster
+propSD <- propSND%>%
+    filter(Population2 == "Swedish")
+##Create another dataset for all those syllable clusters where there are no Swedish syllables
+propDD <- propSND %>%
+    filter(Population2 == "Dutch") %>%
+    filter(relative_prop == 1) 
+  
+##Create column of 0 for the dataset with no Swedish syllables
+propDD["relative_prop"][propDD["relative_prop"] == 1] <- 0
+propDD["Population2"][propDD["Population2"] == "Dutch"] <- "Swedish"#change the population to Swedish
+finalpropSND <- rbind(propSD,propDD)#Combine the two datasets
+finalpropSND$pop_present<- "Dutch egg"
+colnames(finalpropSND)[8] <- "Swedish_prop" ##Change column name to show that it is the proportion of Swedish syllables in the cluster
+  
+## Step 8:Account for individual differences of translocated males in syllable production
+##For each cluster where there are dutch egg syllables, which Dutch egg individual is present and with how many syllables?
+indDE <- cluster_SND %>%
+    filter(Population2 == 'Dutch egg') %>%
+    dplyr::select(cluster, Individual) %>%
+    group_by(cluster,Individual) %>%
+    summarise(n = n()) %>%
+    filter(cluster != '215')
+  
+##dataset with how swedish each cluster is
+indSN <- finalpropSND %>%
+    dplyr::select(cluster, Population2, Swedish_prop, Present)
+  
+##For each individual, which cluster are they not a part of?
+#List of clusters
+dfclusters <- finalpropSND %>%
+    dplyr::select(cluster)
+##List of Swedish proportion in clusters
+dspropcolumn <- finalpropSND %>%
+    dplyr::select(cluster,Swedish_prop)
+  
+##Make a dataset where each cluster has values for the 7 individuals about the number of syllables andthe presence and absence
+# List of individuals
+individuals <- c("DUTCH_CZ.05412", "DUTCH_DA.64239", "DUTCH_DA.64593", 
+                   "DUTCH_DA.64597", "DUTCH_DA.64628", "DUTCH_DA.65911", 
+                   "DUTCH_RNR_unknown_blal.onon")
+  
+# Create an empty list to store the results
+result_list <- list()
+  
+# Loop through each individual
+for (individual in individuals) {
+    
+# Filter data for the current individual
+ind_data <- indDE %>%
+      filter(Individual == individual) %>%
+      dplyr::select(cluster, Individual, n)
+    
+    # Find clusters not present for the individual
+    clusters_not_present <- setdiff(dfclusters$cluster, ind_data$cluster)
+    
+    # Create a data frame with clusters not present
+    df_not_present <- data.frame(cluster = clusters_not_present,
+                                 Individual = individual,
+                                 n = 0,
+                                 Present = '0')
+    
+    # Add Present column to the data for the individual
+    ind_data <- mutate(ind_data, Present = '1')
+    
+    # Combine data frames
+    combined_data <- rbind(ind_data, df_not_present)
+    
+    # Merge with dspropcolumn
+    final_data <- left_join(combined_data, dspropcolumn, by = c('cluster'))
+    
+    # Add result to the list
+    result_list[[individual]] <- final_data
+  }
+  
+# Combine all individual results into one data frame
+final_result <- do.call(rbind, result_list)
+final_result <- as.data.frame(final_result)
+str(final_result)
+  
+#Prepare dataset
+final_result$cluster <- as.factor(final_result$cluster)
+final_result$Individual <- as.factor(final_result$Individual)
+final_result$Present <- as.numeric(final_result$Present)
+  
+  
+## Replicate Figure S4:
+## make a logistic plot for each individual to see the trend
+##Models for the relationship between Presence and absence and proportion ofSwedish syllables in clusters
+log_indDE <- glmer(Present ~ Swedish_prop  + (1|Individual) + (1|cluster), family = binomial, data = final_result)
+summary(log_indDE)
+car::Anova(log_indDE)
+  
+#Check residuals
+simulationOutputlog <- simulateResiduals(fittedModel = log_indDE, plot = F)
+plot(simulationOutputlog) ## everything looks good
+  
+indrandomeffect <- lattice::dotplot(ranef(log_indDE, condVar=TRUE))
+indrandomeffect 
+  
+##Replicate Figure 2C
+final_result <- final_result %>% mutate(pop_present = 'Dutch egg')
+logisticpredicted <- ggplot(final_result, aes(x = Swedish_prop, y = Present, colour = pop_present)) +
+  geom_jitter(data = finalpropSND, aes(x = Swedish_prop, y = Present), 
+  height = 0.04,width = 0.02, alpha = 0.5, size = 7, lwd = 1) +
+  geom_smooth(method = "glm", method.args= list(family = "binomial"),aes(fill = pop_present))+
+  scale_fill_manual(values = c( "#CC7CFF")) + scale_colour_manual(values = c( "#CC7CFF")) + 
+  theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+                     panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  theme(legend.position = "none") +
+  labs(x = "Proportion of Swedish/Dutch syllablesin clusters", y = "Presence of translocated males' \n syllables in clusters") + 
+  theme(axis.text = element_text(size = 15))  + 
+  theme(axis.title = element_text(size = 20)) + 
+  theme(legend.title = element_text(size = 20), legend.text = element_text(size = 15))  + 
+  theme(axis.ticks.length=unit(.25, "cm")) +
+  theme(axis.title.x = element_text(vjust = -0.05)) 
+logisticpredicted
+  
+##Replicate Figure S4:
+individualLR <- ggplot(final_result, aes(x = Swedish_prop, y = Present, fill = Individual)) +  geom_jitter(height = 0.04,width = 0.02, alpha = 0.5, size = 4, lwd = 1, aes(colour = Individual))+
+    geom_smooth(method = "glm", method.args= list(family = "binomial"),aes(fill = Individual, colour = Individual)) +
+    theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+                       panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(legend.position = "none") +
+    labs(x = "Proportion of Swedish/Dutch syllablesin clusters", y = "Presence of translocated males' \n syllables in clusters") + 
+    theme(axis.text = element_text(size = 15))  + 
+    theme(axis.title = element_text(size = 20)) + 
+    theme(legend.title = element_text(size = 20), legend.text = element_text(size = 15))  + 
+    theme(axis.ticks.length=unit(.25, "cm")) +
+    theme(axis.title.x = element_text(vjust = -0.05))  + facet_wrap(.~Individual, nrow = 2)
+individualLR
+  
+  
+  
+

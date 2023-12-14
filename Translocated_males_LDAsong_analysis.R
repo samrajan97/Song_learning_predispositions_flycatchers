@@ -186,7 +186,7 @@ combined_SND %>% filter(Population2 == 'Dutch egg') %>% summarise(mean(LD1),medi
 ## How often do you get Swedish individuals with a mean equal to or higher than Dutch egg birds from the bootstrapping analysis?
 summary %>% filter(ld1_means > 0.5865185)
 
-##Replicate SFigure 1
+##Replicate Figure S1
 hist_ld1means <- ggplot(summary, aes(x=ld1_means)) + 
   geom_histogram(color="black", fill="white") + 
   geom_vline(xintercept=0.587, color="red") +

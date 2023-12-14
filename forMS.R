@@ -1,0 +1,45 @@
+## Set up packages ##
+library(readxl) 
+library(dplyr)
+library(tidyverse) 
+library(ggplot2) 
+library(glmmTMB)
+library(emmeans)
+library(DHARMa)
+library(effsize)
+
+## Import dataset ##
+song_mds <- read_excel("~/song_mds_formatted.xlsx") 
+attach(song_mds)
+
+## Prepare data ##
+song_mds$Population2 <- factor(song_mds$Population2, levels = c("Dutch", "Swedish", "Hybrid", "Dutch egg"))
+song_mds$Rec_year <- as.factor(song_mds$Rec_year)
+
+## Subset the swedish and dutch songs ##
+data_subsong_SN <-  subset(song_SND, Population2 %in% c("Swedish", "Dutch"))
+data_subsong_SN <- droplevels(data_subsong_SN)
+
+## Need CV=TRUE to get to the confusion matrix ##
+lda_SN <- lda(Population2 ~ pc_1_value + pc_2_value + pc_3_value +
+                pc_4_value + pc_5_value + pc_6_value+pc_7_value+pc_8_value+pc_9_value+
+                pc_10_value,
+              data = data_subsong_SN, CV = TRUE)
+
+## Assess the classification accuracy ##
+ctsongSN <- table(data_subsong_SN$Population2, lda_SN$class)
+ctsongSN # Confusion matrix 
+diag(prop.table(ctsongSN, 1)) #accuracy of LDA for each experimental group
+
+## accuracy of lda model over all categories ##
+sum(diag(ctsongSN))/sum(ctsongSN)
+
+## Get a new dataset with the LD values for all the Swedish and Dutch songs ##
+#### Project a new data set using the previous LD functions. First, you have to re-run the LDA with CV = FALSE
+lda_SN <- lda(formula = Population2 ~ pc_1_value + pc_2_value + pc_3_value +
+                pc_4_value + pc_5_value + pc_6_value+pc_7_value+pc_8_value+pc_9_value+
+                pc_10_value, data = data_subsong_SN, CV = FALSE)
+lda_SN
+
+predictSN.ld <- predict(object = lda_SN, newdata = data_subsong_SN) ##Prediction to get the LD scores for all Swedish and Dutch songs
+combinedSN <- cbind(data_subsong_SN, predictSN.ld) ##Combine the original dataset with the posterior probabilities and LD scores

@@ -12,7 +12,7 @@ library(DHARMa)
 library(effsize)
 
 ## Import dataset 
-song_mds <- read_excel("~/Desktop/PF_prelimdata/LundFinalData_310822/song_mds_formatted.xlsx") 
+song_mds <- read_excel("~/song_mds_formatted.xlsx") 
 attach(song_mds)
 
 ## Prepare data 

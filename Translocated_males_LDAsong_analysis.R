@@ -99,3 +99,51 @@ hist(residuals(model))
 
 ##Check random effect of indvidual
 plot_model(model, type = "re")
+
+## REPLICATE FIGURE 1B
+
+## Aggregate LD scores per individual of each experimental group
+combined_SNDind <- combined_SND %>%
+  group_by(Population2,Individual) %>%
+  summarise(LD1 = mean(LD1))
+
+##Plot the density distribution of LD scores of each group
+LD1_distribution<- ggplot(combined_SNDind, aes(LD1, colour = Population2, fill = Population2)) + 
+  geom_density(aes(alpha = factor(Population2)), kernel = c("gaussian"), n = 1002, lwd = 2) + theme(legend.position = "none") +   scale_fill_manual(values = c("#F8766D",  "#00BFC4", "#CC7CFF")) + theme_bw() + 
+  scale_colour_manual(values = c('#ac1308',  '#005f62', '#7000b7')) +
+  labs(x = "LD1 song scores", y = "Probability Density") +
+  xlim(c(-3,3.5)) + ylim(c(0,1.25)) + theme(legend.position = 'none') +
+  theme(axis.title = element_text(size = 45)) +
+  theme(axis.text = element_text(size = 40)) + 
+  scale_alpha_manual(values = c(0.9,0.9,0.7), guide= "none") + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))+ 
+  theme(axis.ticks.length=unit(.45, "cm"))  +
+  theme(axis.title.x = element_text(vjust = -0.5), 
+        axis.title.y = element_text(hjust = 0.4)) + 
+  theme(axis.line = element_line(colour = 'black', size = 1.0), axis.ticks = element_line(colour = "black", size = 1.0))#+
+#geom_vline(data = dummy, aes(xintercept = median, color = Population2))
+LD1_distribution
+
+#Rearrange the groups for the boxplot
+combined_SNDind$Population2 <- factor(combined_SNDind$Population2, levels = c("Dutch", "Dutch egg", "Swedish"))
+
+##Plot the boxplot of LD scores per individual 
+LD1_boxplot <- ggplot(combined_SNDind, aes(y= Population2, x = LD1, colour = NULL, fill = Population2), size = 2) + 
+  geom_boxplot(aes(colour = Population2, alpha = 0.5), width = 0.5, fatten = 2, lwd=2) +
+  theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+                     panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  theme(legend.position = "none") +  
+  scale_fill_manual(values = c("#F8766D", "#CC7CFF",  "#00BFC4")) +  
+  scale_colour_manual(values = c('#ac1308', '#7000b7', '#005f62')) +
+  geom_jitter(aes(colour = Population2),  width = 0.1, height = 0.2, alpha = 0.7, pch=21,size = 9, lwd = 1, stroke = 2) +
+  theme(axis.title = element_text(size = 30)) +
+  theme(axis.text = element_text(size = 25)) +  
+  theme(axis.ticks.length=unit(.25, "cm")) +
+  xlim(c(-3,3.5))
+LD1_boxplot
+
+## Combine the two plots
+LD1_boxplotdist <- ggarrange(LD1_boxplot,LD1_distribution, ncol = 1, align = c("v"),
+                             heights = c(2.0, 2.0))
+LD1_boxplotdist

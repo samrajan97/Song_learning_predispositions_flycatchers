@@ -8,7 +8,6 @@ library(tidyverse) #Data formatting
 library(MASS) #for LDA analysis
 library(ggplot2) #plotting
 library(ggpubr) # arrange multiple plots
-library(lme4) # for logistic regression
 library(glmmTMB) #Linear mixed models
 library(DHARMa) #Model diagnostics
 library(sjPlot) #Plotting of random effects
@@ -83,7 +82,7 @@ combined_sylSND%>% group_by(Population2, class)%>% count()
 
 ## Step 2: clustering tendency
 ## Create dataset with only PC scores of all songs
-misclasSND_onlypc <- misdata_SND[c(27:36), drop = FALSE]
+misclasSND_onlypc <- misdata_SND[c(17:26), drop = FALSE]
 rownames(misclasSND_onlypc) <- misdata_SND$Song ##Attach which song rows come from 
 
 #Create a random dataset to check whether the syllable datatset differs from the random dataset
@@ -263,7 +262,7 @@ final_result$Individual <- as.factor(final_result$Individual)
 final_result$Present <- as.numeric(final_result$Present)
   
 ##Models for the relationship between Presence and absence and proportion ofSwedish syllables in clusters
-log_indDE <- glmer(Present ~ Swedish_prop  + (1|Individual) + (1|cluster), family = binomial, data = final_result)
+log_indDE <- glmmTMB(Present ~ Swedish_prop  + (1|Individual) + (1|cluster), family = binomial, data = final_result)
 summary(log_indDE) 
 car::Anova(log_indDE)
   

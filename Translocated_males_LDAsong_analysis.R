@@ -19,7 +19,7 @@ song_mds <- read_excel("~/data_song_mds.xlsx")
 attach(song_mds)
 
 ## Prepare data 
-song_mds$Population2 <- factor(song_mds$Population2, levels = c("Dutch", "Swedish", "Hybrid", "Dutch egg"))
+song_mds$Population2 <- as.factor(song_mds$Population2, levels = c("Dutch", "Swedish", "Hybrid", "Dutch egg"))
 song_mds$Rec_year <- as.factor(song_mds$Rec_year)
 song_mds$Age <- as.numeric(song_mds$Age)
 
@@ -97,13 +97,13 @@ emmeans(model, list(pairwise~Population2)) ##Post-hoc tests
 
 ## Check model diagnostics using DHARMA package
 simulationOutput <- simulateResiduals(fittedModel = model, plot = F)
-plot(simulationOutput)
+plot(simulationOutput) #All looks good
 hist(residuals(model)) 
 
 ##Check random effect of indvidual
 plot_model(model, type = "re")
 
-## REPLICATE FIGURE 1B
+## 2) REPLICATE FIGURE 1B
 
 ## Aggregate LD scores per individual of each experimental group
 combined_SNDind <- combined_SND %>%
@@ -152,7 +152,7 @@ LD1_boxplotdist <- ggarrange(LD1_boxplot,LD1_distribution, ncol = 1, align = c("
 LD1_boxplotdist
 
 
-## 2) BOOTSTRAPPING ANALYSIS 
+## 3) BOOTSTRAPPING ANALYSIS 
 
 ## This analysis is looking at how the mean of LD scores of Swedish indiviudals varies from Dutch egg individuals when you only take 7 Swedish individuals at a time
 swedish_list <- unique(subset(combined_SND, Population2 == 'Swedish')$Individual)

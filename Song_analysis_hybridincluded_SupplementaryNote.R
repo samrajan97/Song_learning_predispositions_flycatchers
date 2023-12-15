@@ -8,6 +8,7 @@ library(tidyverse) #Data formatting
 library(MASS) #for LDA analysis
 library(ggplot2) #plotting
 library(ggridges) #For overlapping density plots
+library(lme4) #Model for hybrid parentage
 library(DHARMa) #Model diagnostics
 library(sjPlot) #Plotting of random effects
 library(pwr) #Power analysis
@@ -105,6 +106,29 @@ densityplotSNDH <- ggplot(combined_SNDHind, aes(x = LD1, y = Population2, fill =
   scale_y_discrete(expand = expand_scale(mult = c(0.01, .2))) +
   theme(axis.ticks.length=unit(0.3,"cm")) 
 densityplotSNDH
+
+## 3) ROLE OF HYBRID PARENTAGE
+
+## Create a dataset with only hybrid and Swedish birds
+##This is to check whether the song distribution of hybrids with a Dutch mother or a father is different from each other and the local Swedish birds
+hybridswedish <- combined_SNDH %>%
+  filter(Population2 != 'Dutch egg') %>%
+  filter(Population2 != 'Dutch') 
+
+hybridswedish$Population <- droplevels(hybridswedish$Population)
+hybridswedish$Population <- recode_factor(hybridswedish$Population,
+                                          "Swedish_nonlocal" = "Swedish", "Swedish_local" = "Swedish",  
+                                          "Hybrid_dutchmother" = "Hybrid with Dutch mother", 
+                                          "Hybrid_dutchfather" = "Hybrid with Dutch father")
+
+#Create model to check effect of parentage
+model <- lmer(LD1 ~ Population+ (1|Individual), data = hybridswedish)
+car::Anova(model)
+
+## Check model diagnostics using DHARMA package
+simulationOutput <- simulateResiduals(fittedModel = model, plot = F)
+plot(simulationOutput)
+
 
 
 

@@ -19,14 +19,14 @@ song_mds <- read_excel("~/data_song_mds.xlsx")
 attach(song_mds)
 
 ## Prepare data 
-song_mds$Population2 <- as.factor(song_mds$Population2, levels = c("Dutch", "Swedish", "Hybrid", "Dutch egg"))
+song_mds$Population2 <- factor(song_mds$Population2, levels = c("Dutch", "Swedish", "Hybrid", "Dutch egg"))
 song_mds$Rec_year <- as.factor(song_mds$Rec_year)
 song_mds$Age <- as.numeric(song_mds$Age)
 
 ## 1) LINEAR DISCRIMINANT ANALYSIS 
 
 ## Subset the swedish and dutch songs 
-data_subsong_SN <-  subset(song_SND, Population2 %in% c("Swedish", "Dutch"))
+data_subsong_SN <-  subset(song_mds, Population2 %in% c("Swedish", "Dutch"))
 data_subsong_SN <- droplevels(data_subsong_SN)
 
 ## Need CV=TRUE to get to the confusion matrix 
@@ -54,7 +54,7 @@ predictSN.ld <- predict(object = lda_SN, newdata = data_subsong_SN) ##Prediction
 combinedSN <- cbind(data_subsong_SN, predictSN.ld) ##Combine the original dataset with the posterior probabilities and LD scores
 
 ##Create  the testing dataset for translocated males
-data_subsong_D <-  subset(song_SND, Population2 %in% c("Dutch egg"))
+data_subsong_D <-  subset(song_mds, Population2 %in% c("Dutch egg"))
 data_subsong_D <- droplevels(data_subsong_D)
 
 ## Projection of translocated males songs onto Dutch and Swedish songs

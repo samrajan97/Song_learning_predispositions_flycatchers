@@ -23,11 +23,6 @@ song_mds$Population2 <- as.factor(song_mds$Population2, levels = c("Dutch", "Swe
 song_mds$Rec_year <- as.factor(song_mds$Rec_year)
 song_mds$Age <- as.numeric(song_mds$Age)
 
-##Create dataset without half Dutch-half Swedish 'hybrid' males. 
-##This is the dataset that will be used for further analysis of translocated males 'Dutch egg' birds
-song_SND <- song_mds %>%
-  filter(Population2 != 'Hybrid')
-
 ## 1) LINEAR DISCRIMINANT ANALYSIS 
 
 ## Subset the swedish and dutch songs 

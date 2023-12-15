@@ -2,18 +2,23 @@
 rm(list = ls())
 
 ## Set up packages ##
-library(readxl) 
-library(dplyr)
-library(tidyverse) 
-library(ggplot2) 
-library(glmmTMB)
-library(emmeans)
-library(DHARMa)
-library(effsize)
-library(dendextend)
+library(readxl) #import excel files
+library(dplyr) #Data formatting
+library(tidyverse) #Data formatting
+library(MASS) #for LDA analysis
+library(ggplot2) #plotting
+library(ggpubr) # arrange multiple plots
+library(lme4) # for logistic regression
+library(glmmTMB) #Linear mixed models
+library(DHARMa) #Model diagnostics
+library(sjPlot) #Plotting of random effects
+library(hopkins) #For hopkins statistics
+library(factoextra) #Plotting hopkins clustering
+library(cluster) #heirarchical clustering analysis
+library(dendextend) #for analysis of dendograms
 
 ## Import dataset 
-syl_mds <- read_excel("~/Desktop/PF_prelimdata/LundFinalData_310822/syl_mds_final.xlsx") 
+syl_mds <- read_excel("~/data_syllable_mds.xlsx") 
 attach(syl_mds)
 
 ## Make Population2 a factor
@@ -59,15 +64,13 @@ data_subsyl_D <- droplevels(data_subsyl_D)
 D_sylSN.ld <- predict(object = lda_sylSN, newdata = data_subsyl_D) ##Predict posterior probabilities for the treatment group
 combined_sylD <- cbind(data_subsyl_D, D_sylSN.ld) ##Combine the dataset to get the LD1 and classification scores for all songs
 
+#these lines allow you to assess the classification accuracy
+ctsylD <- table(data_subsyl_D$Population2, D_sylSN.ld$class)
+ctsylD ## Confusion matrix 
+diag(prop.table(ctsylD, 1)) ##accuracy of LDA for Dutch egg birds
+
 ##Combine dataset of posterior probabilties of LD syllable scores of translocated males with Dutch and Swedish syllables
 combined_sylSND<- rbind(combined_sylSN, combined_sylD)
-
-## Summary statistics:
-## Get count and percentage for every subgroup:
-combined_sylSND%>%
-  group_by(Population2, class)%>%
-  summarise(count = n()) %>%
-  mutate(percentage = count/sum(count)*100)
 
 ## CLUSTERING ANALYSIS ##
 
@@ -94,21 +97,20 @@ euc_misclasSND <- dist(misclasSND_onlypc, method = "euclidean", diag = TRUE)
 euc_randomSND <- dist(random_misclasSND_onlypc, method = "euclidean")
 
 ##How does the data cluster between the actual and random dataset? 
-## This code takes a long time to run, run only if necessary
-hopkins(misclasSND_onlypc) #0.15= high clusterability
-hopkins(random_misclasSND_onlypc) #0.494, lower clusterability than the actual dataset
+hopkins(misclasSND_onlypc) #0.99= high clusterability
+hopkins(random_misclasSND_onlypc) #0.50, random clustering
 
 ##produce heat maps to see clustering tendency
-## This code takes a long time to run, run only if necessary
 plotclus_misclassSND <-fviz_dist(euc_misclasSND)
+## This code takes a long time to run, run only if necessary
 plotclus_misclassSND
 plotclus_randommisclassSND <- fviz_dist(euc_randomSND)
 plotclus_randommisclassSND
 
 ## Step 3: Heirarchical clustering analysis with different methods
-hc1 <- agnes(euc_misclasSND, method = "average") #0.895
+#hc1 <- agnes(euc_misclasSND, method = "average") #0.895
 hc2 <- agnes(euc_misclasSND, method = "ward") ##ward is the best, 0.994
-hc3 <- agnes(euc_misclasSND, method = "complete") #0.935
+#hc3 <- agnes(euc_misclasSND, method = "complete") #0.935
 hc2$ac ##check coefficient
 
 ##convert the clustering output to dendextend object for further analysis 
@@ -116,14 +118,20 @@ dendogram <- as.dendrogram(hc2)
 
 # Step 4: What are the optimal number of clusters?
 
-#1) Global silhouette index for heirarchical clustering: run only if you want to do it again, takes a long time
+#1) Global silhouette index for heirarchical clustering: 
+#run these lines only if you want to do it again, takes a long time
+#Otherwise just load in the excel sheet, code below
 n_clust <- fviz_nbclust(misclasSND_onlypc, hcut, k.max = 1000, method = "silhouette")+
   labs(subtitle = "Silhouette method")
-  n_clust <- n_clust$data
-  n_clust <- n_clust %>%
-  mutate(diff = y - lag(y))
+n_clust <- n_clust$data
+n_clust <- n_clust %>%
+mutate(diff = y - lag(y))
 
 ## Replicate Figure S2:
+#Import clustering output from previous step
+n_clust <- read_excel("~/GSIclusteringoutput_syllables.xlsx") 
+attach(n_clust)
+n_clust$clusters <- as.numeric(n_clust$clusters)
 optimumclustersSND <- ggplot(n_clust, aes(x = clusters, y = y)) + geom_line(aes(group=1))+
     geom_vline(xintercept = 146) + 
     geom_vline(xintercept = 215) + 
@@ -131,7 +139,7 @@ optimumclustersSND <- ggplot(n_clust, aes(x = clusters, y = y)) + geom_line(aes(
     theme(panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
     theme(legend.position = "none") +
     labs(x = "Number of clusters (Syllable types)", y = "GSI") 
-  optimumclustersSND
+optimumclustersSND
   
 ## Step 5: identify syllables to syllable clusters 
 ##Run everything after this again with k= 147 and k=356 to replicate Figure S3.
@@ -254,18 +262,16 @@ final_result$cluster <- as.factor(final_result$cluster)
 final_result$Individual <- as.factor(final_result$Individual)
 final_result$Present <- as.numeric(final_result$Present)
   
-  
-## Replicate Figure S4:
-## make a logistic plot for each individual to see the trend
 ##Models for the relationship between Presence and absence and proportion ofSwedish syllables in clusters
 log_indDE <- glmer(Present ~ Swedish_prop  + (1|Individual) + (1|cluster), family = binomial, data = final_result)
-summary(log_indDE)
+summary(log_indDE) 
 car::Anova(log_indDE)
   
 #Check residuals
 simulationOutputlog <- simulateResiduals(fittedModel = log_indDE, plot = F)
 plot(simulationOutputlog) ## everything looks good
-  
+
+#Plot random effect fo individual
 indrandomeffect <- lattice::dotplot(ranef(log_indDE, condVar=TRUE))
 indrandomeffect 
   

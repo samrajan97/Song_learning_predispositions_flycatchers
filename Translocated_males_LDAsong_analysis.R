@@ -2,14 +2,17 @@
 rm(list = ls())
 
 ## Set up packages ##
-library(readxl) 
-library(dplyr)
-library(tidyverse) 
-library(ggplot2) 
-library(glmmTMB)
-library(emmeans)
-library(DHARMa)
-library(effsize)
+library(readxl) #import excel files
+library(dplyr) #Data formatting
+library(tidyverse) #Data formatting
+library(MASS) #for LDA analysis
+library(ggplot2) #plotting
+library(ggpubr) # arrange multiple plots
+library(glmmTMB) #Linear mixed models
+library(emmeans) #Posthoc tests
+library(DHARMa) #Model diagnostics
+library(sjPlot) #Plotting of random effects
+library(effsize) #Effect size: Cohen's D
 
 ## Import dataset 
 song_mds <- read_excel("~/data_song_mds.xlsx") 
@@ -20,12 +23,12 @@ song_mds$Population2 <- factor(song_mds$Population2, levels = c("Dutch", "Swedis
 song_mds$Rec_year <- as.factor(song_mds$Rec_year)
 song_mds$Age <- as.numeric(song_mds$Age)
 
-## 1) LINEAR DISCRIMINANT ANALYSIS 
-
 ##Create dataset without half Dutch-half Swedish 'hybrid' males. 
 ##This is the dataset that will be used for further analysis of translocated males 'Dutch egg' birds
 song_SND <- song_mds %>%
   filter(Population2 != 'Hybrid')
+
+## 1) LINEAR DISCRIMINANT ANALYSIS 
 
 ## Subset the swedish and dutch songs 
 data_subsong_SN <-  subset(song_SND, Population2 %in% c("Swedish", "Dutch"))
@@ -63,15 +66,13 @@ data_subsong_D <- droplevels(data_subsong_D)
 D_SN.ld <- predict(object = lda_SN, newdata = data_subsong_D) ##Predict posterior probabilities for translocated males' songs
 combined_D <- cbind(data_subsong_D, D_SN.ld) ##Combine the dataset to get the LD and classification scores for all songs of translocted males
 
+## Assess the classification accuracy of Dutch egg songs
+ctsongD <- table(data_subsong_D$Population2, D_SN.ld$class)
+ctsongD # Confusion matrix
+diag(prop.table(ctsongD, 1)) #rate at which Dutch egg songs get misclassified as Dutch
+
 ## Final dataset: Combine dataset of posterior probabilties of translocated males with Dutch and Swedish birds
 combined_SND <- rbind(combinedSN, combined_D)
-
-## Summary statistics:
-## Get count and percentage for every subgroup:
-combined_SND%>%
-  group_by(Population2, class)%>%
-  summarise(count = n()) %>%
-  mutate(percentage = count/sum(count)*100)
 
 ## Calculate effect size between the different experimental groups:
 #Create vectors with variable of interest from each experimental group

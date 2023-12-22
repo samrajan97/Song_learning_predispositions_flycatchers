@@ -34,8 +34,8 @@ Number of cases/rows: 1022
 
 Variable List:
 
-"Population" = Experimental group each individual belongs to, but including information on whether their parentage (local vs non local, dutch father vs dutch mother)
-"Population2" = Experimental group each individual belongs to (used in the final analysis): Swedish (Swedish birds), Dutch (Dutch birds), Dutch egg (Translocated males), Hybrids (Half Ducth-half Swedish birds)
+- "Population" = Experimental group each individual belongs to, but including information on whether their parentage (local vs non local, dutch father vs dutch mother)
+- "Population2" = Experimental group each individual belongs to (used in the final analysis): Swedish (Swedish birds), Dutch (Dutch birds), Dutch egg (Translocated males), Hybrids (Half Ducth-half Swedish birds)
 "Individual" = Individual identity
 "Song" = Identity of songs that an individual produces
 "Dutch_father" = This is relevant for hybrid birds and refers to whether they have a dutch father or mother

@@ -27,3 +27,37 @@ Relationship between files:
 ## Methods to generate data
 
 ## File specific information
+1) data_song_mds.txt
+Number of variables: 25
+
+Number of cases/rows: 1022
+
+Variable List:
+
+"Population" = Experimental group each individual belongs to, but including information on whether their parentage (local vs non local, dutch father vs dutch mother)
+"Population2" = Experimental group each individual belongs to (used in the final analysis): Swedish (Swedish birds), Dutch (Dutch birds), Dutch egg (Translocated males), Hybrids (Half Ducth-half Swedish birds)
+"Individual" = Individual identity
+"Song" = Identity of songs that an individual produces
+"Dutch_father" = This is relevant for hybrid birds and refers to whether they have a dutch father or mother
+"Social_father" = The social father for all the locally born birds in the translocation experiment
+"Rec_year" = Year in which the songs of the individual were recorded
+"Birth_year" = Birth year
+"Age" = Estimate of age for all locally born birds
+"First_adult_year" = Year they were observed breeding for the first time
+"Hatch_date" = The date when they hatched
+"Fledging_mass" = Mass at fledging
+"Record_tarsus" = Tarsus length as adults
+"Record_p3" = NA
+"Record_mass" = Mass recorded as adults
+"pc_1_value" = First principal component scores for each song
+"pc_2_value" = Second principal component scores for each song
+"pc_3_value" = Third principal component scores for each song
+"pc_4_value" = Fourth principal component scores for each song
+"pc_5_value" = Fifth principal component scores for each song
+"pc_6_value" = Sixth principal component scores for each song
+"pc_7_value" = Seventh principal component scores for each song
+"pc_8_value" = Eighth principal component scores for each song
+"pc_9_value" = Ninth principal component scores for each song
+"pc_10_value" = Tenth principal component scores for each song
+
+Missing data codes: NA

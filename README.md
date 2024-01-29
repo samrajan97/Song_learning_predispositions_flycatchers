@@ -77,4 +77,16 @@ Missing data codes: NA
 2) data_syllable_mds.xlsx
 Number of variables: 25
 
-Number of cases/rows: 1022
+Number of cases/rows: 11,718
+
+Column information same as for `data_song_mds.xlsx`
+
+3) GSIclusteringoutput_syllables.xlsx
+Number of variables: 3
+
+Number of cases/rows: 1001
+
+- "clusters" = n number of clusters from 1-1000
+- "y" = Global silhoutte index (GSI) for that cluster
+- "diff" = Difference in the GSI index between the cluster and preceding cluster
+

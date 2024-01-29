@@ -1,5 +1,6 @@
 # Overview
-This repository hosts the code and data required to replicate the results in the MS 'Learning predispositions coevolve with song divergence in pied flycatchers'.
+This repository hosts the code and data required to replicate the results in the MS 'Learning predispositions track population divergence in the songs of wild pied flycatchers (Ficedula hypoleuca)
+.
 
 ## Table of Contents
 - [Data and File overview](#data-and-file-overview)
@@ -18,7 +19,7 @@ This repository contains the following:
 - `Syllable_analysis_Translocatedmales_LDAandClustering.R`
 - `Song_analysis_hybridincluded_SupplementaryNote.R`
 
-Relationship between files:
+Description of files and relationship between files:
 1. The dataset `data_song_mds.xlsx` was used for the analysis of songs of the translocated males and analyses can be reproduced using the R script `Song_analysis_Translocated_males_LDA.R`. The code can also be used to replicate Figure 1B and Figure S1.
 2. The dataset `data_syllable_mds.xlsx` was used for the analysis of syllables of the translocated males and analyses can be reproduced using the R script `Song_analysis_Translocated_males_LDA.R`. The code can also be used to replicate Figure 2A,C; Figure S2; Figure S3; Figure S4
 3. The dataset `GSIclusteringoutput_syllables.xlsx` is the output of code used in (2) that is too heavy to run and is therefore, attached here. This dataset is the global silhouette index used to find the optimum number of clusters of syllables of individuals used in the translocation experiment. 
@@ -26,8 +27,19 @@ Relationship between files:
 
 ## Methods to generate data
 
+1. Description of methods used for collection/generation of data: 
+
+Dataset `data_song_mds.xlsx` and dataset `data_song_mds.xlsx`
+The song and syllable repertoires of 88 adult male pied flycatchers were recorded and analysed during the two breeding seasons of 2020 and 2021 in Dutch and Swedish populations of pied flycatchers. These contained unmanipulated individuals breeding in the Dutch (N = 26, ref= 'Dutch') and Swedish (N = 38, ref = 'Swedish') populations, as well as translocated males with 100% Dutch ancestry (N = 7, ref = 'Dutch egg') and half Dutch-half Swedish males (N = 17, ref = 'hybrid') that were breeding in the Swedish population. 
+
+Songs of each individual were imported into a database using the Luscinia sound analysis program (http://github.com/rflachlan/luscinia, version 2.17.11.22.01). For each song, the elements (the smallest unit of a song, subunits of a syllable) were measured as a continuous sound sequence and were grouped into syllables if the gap between them was less than 30ms. In order to compare how vocalisations differed between unmanipulated males from the Dutch and Swedish populations and translocated males, the structure of each syllable within a song was compared with every other syllable in the dataset using a dynamic time warping (DTW) algorithm. The analysis was carried out with a compression factor of 0.0001, time SD weighting of 1, maximum warp of 25 % and a minimum element length of 25 samples. Additionally, we used the following weightings for time (5), mean frequency (1), mean frequency change (1), normalised mean frequency (1) with all other acoustic features left at the standard values. The output of the DTW analysis are multiple syllable dissimilarity matrices with the acoustic distance for each acoustic measurement between all possible pairs of syllables in the dataset. Further, using the non-metric multidimensional scaling function in Luscinia, we converted the syllable dissimilarity matrices into Euclidean dimensions at both the syllable and the song level, resulting in the corresponding datasets. 
+
+2. Instrument- or software-specific information needed to interpret the data: 
+R v.4.2.0 https://www.r-project.org/
+R studio v2022.07.2+576
+
 ## File specific information
-1) data_song_mds.txt
+1) data_song_mds.xlsx
 Number of variables: 25
 
 Number of cases/rows: 1022
@@ -61,3 +73,8 @@ Number of cases/rows: 1022
 - "pc_10_value" = Tenth principal component scores for each song
 
 Missing data codes: NA
+
+2) data_syllable_mds.xlsx
+Number of variables: 25
+
+Number of cases/rows: 1022

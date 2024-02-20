@@ -100,7 +100,7 @@ combined_sylSND%>% group_by(Population2, class)%>% count()
 
 ## Step 2: clustering tendency
 ## Create dataset with only PC scores of all songs
-misclasSND_onlypc <- misdata_SND[c(17:26), drop = FALSE]
+misclasSND_onlypc <- misdata_SND[c(16:25), drop = FALSE]
 rownames(misclasSND_onlypc) <- misdata_SND$Song ##Attach which song rows come from 
 
 #Create a random dataset to check whether the syllable datatset differs from the random dataset
@@ -288,16 +288,12 @@ car::Anova(log_indDE)
 #Check residuals
 simulationOutputlog <- simulateResiduals(fittedModel = log_indDE, plot = F)
 plot(simulationOutputlog) ## everything looks good
-
-#Plot random effect of individual
-indrandomeffect <- lattice::dotplot(ranef(log_indDE, condVar=TRUE))
-indrandomeffect 
   
 ##Replicate Figure 2C
 final_result <- final_result %>% mutate(pop_present = 'Dutch egg')
 logisticpredicted <- ggplot(final_result, aes(x = Swedish_prop, y = Present, colour = pop_present)) +
   geom_jitter(data = finalpropSND, aes(x = Swedish_prop, y = Present), 
-  height = 0.04,width = 0.02, alpha = 0.5, size = 7, lwd = 1) +
+  height = 0.04,width = 0.02, alpha = 0.5, lwd = 1) +
   geom_smooth(method = "glm", method.args= list(family = "binomial"),aes(fill = pop_present))+
   scale_fill_manual(values = c( "#CC7CFF")) + scale_colour_manual(values = c( "#CC7CFF")) + 
   theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
@@ -318,17 +314,20 @@ final_result$Individual <- factor(final_result$Individual, levels = c('DUTCH_DA.
                                                                       'DUTCH_DA.64597', 'DUTCH_DA.65911',
                                                                       'DUTCH_DA.64593', 'DUTCH_CZ.05412','DUTCH_DA.64628'))
 
-individualLR <- ggplot(final_result, aes(x = Swedish_prop, y = Present, fill = Individual)) +  geom_jitter(height = 0.04,width = 0.02, alpha = 0.5, size = 4, lwd = 1, aes(colour = Individual))+
-    geom_smooth(method = "glm", method.args= list(family = "binomial"),aes(fill = Individual, colour = Individual)) +
-    theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
-                       panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
-    theme(legend.position = "none") +
-    labs(x = "Proportion of Swedish/Dutch syllablesin clusters", y = "Presence of translocated males' \n syllables in clusters") + 
-    theme(axis.text = element_text(size = 15))  + 
-    theme(axis.title = element_text(size = 20)) + 
-    theme(legend.title = element_text(size = 20), legend.text = element_text(size = 15))  + 
-    theme(axis.ticks.length=unit(.25, "cm")) +
-    theme(axis.title.x = element_text(vjust = -0.05))  + facet_wrap(.~Individual, nrow = 2)
+individualLR <- ggplot(final_result, aes(x = Swedish_prop, y = Present, fill = Individual)) + 
+  geom_jitter(height = 0.04,width = 0.02, alpha = 0.5, lwd = 1, aes(colour = Individual))+
+  geom_smooth(method = "glm", method.args= list(family = "binomial"),aes(fill = Individual, colour = Individual)) +
+  theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+                     panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  scale_fill_manual(values = c('#dba3ff', '#d490ff','#c468ff', '#ad2eff', '#a61aff', '#7c00ca','#6400a3')) +  
+  scale_colour_manual(values = c('#dba3ff', '#d490ff','#c468ff', '#ad2eff', '#a61aff', '#7c00ca','#6400a3')) +
+  theme(legend.position = "none") +
+  labs(x = "Proportion of syllables from the Swedish population", y = "Presence of a syllable from a translocated male") + 
+  theme(axis.text = element_text(size = 15))  + 
+  theme(axis.title = element_text(size = 20)) + 
+  theme(legend.title = element_text(size = 20), legend.text = element_text(size = 15))  + 
+  theme(axis.ticks.length=unit(.25, "cm")) +
+  theme(axis.title.x = element_text(vjust = -0.05))  + facet_wrap(.~Individual, nrow = 2)
 individualLR
 
 ## Response to revier #3 comment:

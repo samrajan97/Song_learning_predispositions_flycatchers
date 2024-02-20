@@ -39,7 +39,6 @@ Songs of each individual were imported into a database using the Luscinia sound 
 
 2. Instrument- or software-specific information needed to interpret the data: 
 R v.4.2.0 https://www.r-project.org/
-R studio v2022.07.2+576
 
 ## File specific information
 1) data_song_mds.xlsx

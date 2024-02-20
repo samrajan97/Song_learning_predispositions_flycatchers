@@ -82,7 +82,7 @@ hist(residuals(model))
 ##power analysis: not the way to do it,but code is here
 pwr.t2n.test(n1=38, d = 0.23, sig.level = 0.05, power = 0.2)
 
-## 2) REPLICATE SUPPLEMENTARY NOTE FIGURE
+## 2) REPLICATE SUPPLEMENTARY FIGURE 3
 
 ## calculate LD scores per individual
 combined_SNDHind <- combined_SNDH %>%

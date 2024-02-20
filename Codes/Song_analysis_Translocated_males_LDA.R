@@ -89,7 +89,7 @@ cohen.d(DE, Du) #large: Between Dutch and Dutch egg birds
 
 ## Linear regression of experimental group and Age on LD scores of all birds:
 model <- glmmTMB(LD1 ~ Population2  + Age +(1|Individual), data =combined_SND, dispformula = ~Population2,family = gaussian())
-car::Anova(model) ##Likelihood ratio test
+car::Anova(model) ##Overall effect of Population and age
 emmeans(model, list(pairwise~Population2)) ##Post-hoc tests
 
 ## Check model diagnostics using DHARMA package
@@ -100,7 +100,11 @@ hist(residuals(model))
 ##Check random effect of indvidual
 plot_model(model, type = "re")
 
-## Find the relationship between within and between individual variance for all experimental groups: (Comment from #reviewer 2)
+##Run model again without dispformula to get within and between individual variance
+model_variance <- glmmTMB(LD1 ~ Population2  + Age +(1|Individual), data =combined_SND, family = gaussian())
+summary(model_variance)
+
+## Find the relationship between within and between individual variance for each experimental group: (Comment from #reviewer 2)
 # 1) Translocated males
 model_dutchegg <- glmmTMB(LD1 ~ 1 +(1|Individual), data =combined_D,family = gaussian())
 summary(model_dutchegg) #check variance explained by random effect
@@ -108,7 +112,7 @@ summary(model_dutchegg) #check variance explained by random effect
 # 2) Swedish birds:
 combined_S <- combinedSN %>% filter(Population2 == 'Swedish')
 model_Swedish <- glmmTMB(LD1 ~1 +(1|Individual), data =combined_S,family = gaussian())
-summary(m2_S)
+summary(model_Swedish)
 
 # 3) Dutch birds:
 combined_Du <- combinedSN %>% filter(Population2 == 'Dutch')
@@ -209,6 +213,8 @@ indvariation_LDsongs <- ggplot(combinedplot, aes(y= Individual, x = LD1, colour 
     theme(axis.ticks.length=unit(.25, "cm")) +
   xlim(c(-3,3.5))
 
+indvariation_LDsongs
+
 ## 5) BOOTSTRAPPING ANALYSIS 
 
 ## This analysis is looking at how the mean of LD scores of Swedish indiviudals varies from Dutch egg individuals when you only take 7 Swedish individuals at a time
@@ -241,10 +247,10 @@ summary <- as.data.frame(summary)
 
 ## What are the summary stats for the Dutch egg birds
 combined_SND %>% filter(Population2 == 'Dutch egg') %>% summarise(mean(LD1),median(LD1), sd(LD1), var(LD1))
-## How often do you get Swedish individuals with a mean equal to or higher than Dutch egg birds from the bootstrapping analysis?
-summary %>% filter(ld1_means > 0.5865185)
+## How often do you get Swedish individuals with a mean equal to or lower than Dutch egg birds from the bootstrapping analysis?
+summary %>% filter(ld1_means < 0.5865185)
 
-##Replicate Figure S1
+##Replicate Figure S2
 hist_ld1means <- ggplot(summary, aes(x=ld1_means)) + 
   geom_histogram(color="black", fill="white") + 
   geom_vline(xintercept=0.587, color="red") +

@@ -71,6 +71,24 @@ diag(prop.table(ctsylD, 1)) ##accuracy of LDA for Dutch egg birds
 ##Combine dataset of posterior probabilties of LD syllable scores of translocated males with Dutch and Swedish syllables
 combined_sylSND<- rbind(combined_sylSN, combined_sylD)
 
+## Replicate Figure 2A:
+LD_syllables <- ggplot(combined_sylSND, aes(LD1, colour = Population2, fill = Population2)) + 
+  geom_density(aes(alpha = factor(Population2)), kernel = c("gaussian")) + theme(legend.position = "none") +   
+  scale_fill_manual(values = c("#F8766D",  "#00BFC4", "#CC7CFF")) + theme_bw() + 
+  scale_colour_manual(values = c('#ac1308',  '#005f62', '#7000b7')) +
+  labs(x = "LD syllable scores", y = "Probability Density") +
+  xlim(c(-4,4)) + ylim(c(0,0.8)) + theme(legend.position = 'none') +
+  theme(axis.title = element_text(size = 45)) +
+  theme(axis.text = element_text(size = 40)) + 
+    scale_alpha_manual(values = c(0.9,0.9,0.7), guide= "none") + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))+ 
+    theme(axis.ticks.length=unit(.45, "cm"))  +
+  theme(axis.title.x = element_text(vjust = -0.5), 
+        axis.title.y = element_text(hjust = 0.4)) + 
+  theme(axis.line = element_line(colour = 'black', size = 1.0), axis.ticks = element_line(colour = "black", size = 1.0)) + geom_vline(xintercept =- 0.237)
+LD_syllables
+
 ## CLUSTERING ANALYSIS ##
 
 ##Step 1: Create a dataset with all those syllables that were classified as Dutch by the LD function from ALL three experimental groups
@@ -126,7 +144,7 @@ n_clust <- n_clust$data
 n_clust <- n_clust %>%
 mutate(diff = y - lag(y))
 
-## Replicate Figure S2:
+## Replicate Figure S4:
 #Import clustering output from previous step
 n_clust <- read_excel("~/GSIclusteringoutput_syllables.xlsx") 
 attach(n_clust)
@@ -141,7 +159,7 @@ optimumclustersSND <- ggplot(n_clust, aes(x = clusters, y = y)) + geom_line(aes(
 optimumclustersSND
   
 ## Step 5: identify syllables to syllable clusters 
-##Run everything after this again with k= 147 and k=356 to replicate Figure S3.
+##Run everything after this again with k= 147 and k=356 to replicate Figure S5.
 
 ##Create clusters based on how many clusters we should have, and append them to original dataset
 sub_grp <- cutree(dendogram, k = 215)
@@ -176,6 +194,7 @@ propSND <- propSND %>%
     mutate(totalprop = sum(prop), relative_prop = prop/totalprop) 
   
 ## Now for each cluster, instead of having the relative proportion of dutch and swedish syllables, calculate how 'Swedish' each cluster is:
+## That is, the proportion of syllables originating from the Swedish population
 ##create dataset with only values of Swedish proportion for each cluster
 propSD <- propSND%>%
     filter(Population2 == "Swedish")
@@ -270,7 +289,7 @@ car::Anova(log_indDE)
 simulationOutputlog <- simulateResiduals(fittedModel = log_indDE, plot = F)
 plot(simulationOutputlog) ## everything looks good
 
-#Plot random effect fo individual
+#Plot random effect of individual
 indrandomeffect <- lattice::dotplot(ranef(log_indDE, condVar=TRUE))
 indrandomeffect 
   
@@ -284,7 +303,8 @@ logisticpredicted <- ggplot(final_result, aes(x = Swedish_prop, y = Present, col
   theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
                      panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
   theme(legend.position = "none") +
-  labs(x = "Proportion of Swedish/Dutch syllablesin clusters", y = "Presence of translocated males' \n syllables in clusters") + 
+  labs(x = "Proportion of syllables from the Swedish population", 
+       y = "Presence of a syllable from a translocated male") + 
   theme(axis.text = element_text(size = 15))  + 
   theme(axis.title = element_text(size = 20)) + 
   theme(legend.title = element_text(size = 20), legend.text = element_text(size = 15))  + 
@@ -292,7 +312,12 @@ logisticpredicted <- ggplot(final_result, aes(x = Swedish_prop, y = Present, col
   theme(axis.title.x = element_text(vjust = -0.05)) 
 logisticpredicted
   
-##Replicate Figure S4:
+##Replicate Figure S6:
+##Reorder individuals to match Figure S1
+final_result$Individual <- factor(final_result$Individual, levels = c('DUTCH_DA.64239','DUTCH_RNR_unknown_blal.onon',
+                                                                      'DUTCH_DA.64597', 'DUTCH_DA.65911',
+                                                                      'DUTCH_DA.64593', 'DUTCH_CZ.05412','DUTCH_DA.64628'))
+
 individualLR <- ggplot(final_result, aes(x = Swedish_prop, y = Present, fill = Individual)) +  geom_jitter(height = 0.04,width = 0.02, alpha = 0.5, size = 4, lwd = 1, aes(colour = Individual))+
     geom_smooth(method = "glm", method.args= list(family = "binomial"),aes(fill = Individual, colour = Individual)) +
     theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
@@ -305,7 +330,23 @@ individualLR <- ggplot(final_result, aes(x = Swedish_prop, y = Present, fill = I
     theme(axis.ticks.length=unit(.25, "cm")) +
     theme(axis.title.x = element_text(vjust = -0.05))  + facet_wrap(.~Individual, nrow = 2)
 individualLR
+
+## Response to revier #3 comment:
+#Make a dataset where you have only those clusters where atleast 1 syllable from translocated male is present
+subset_dataind <- final_result %>%
+  group_by(cluster) %>%
+  filter(any(Present == 1))
+
+##Check the number of unique clusters, to see how many clusters we lose in the process
+length(unique(final_result$cluster))
+length(unique(subset_dataind$cluster))
   
-  
-  
+##Make a model to check the likelihood of syllables from males present with prop of Swedish sylllables
+loghist <- glmmTMB(Present ~ Swedish_prop + (1|cluster) + (1|Individual), family = binomial, data = subset_dataind)
+summary(loghist) ##We get the same result as before
+
+#Check residuals
+simulationOutputlog <- simulateResiduals(fittedModel = loghist, plot = F)
+plot(simulationOutputlog) ## everything looks good
+
 

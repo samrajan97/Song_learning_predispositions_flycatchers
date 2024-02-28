@@ -19,24 +19,24 @@ song_mds <- read_excel("~/data_song_mds.xlsx")
 attach(song_mds)
 
 ## Prepare data 
-song_mds$Population2 <- factor(song_mds$Population2, levels = c("Dutch", "Swedish", "Hybrid", "Dutch egg"))
+song_mds$Experimental_group <- factor(song_mds$Experimental_group, levels = c("Dutch", "Swedish", "Hybrid", "Dutch egg"))
 song_mds$Rec_year <- as.factor(song_mds$Rec_year)
 song_mds$Age <- as.numeric(song_mds$Age)
 
 ## 1) LINEAR DISCRIMINANT ANALYSIS 
 
 ## Subset the swedish and dutch songs 
-data_subsong_SN <-  subset(song_mds, Population2 %in% c("Swedish", "Dutch"))
+data_subsong_SN <-  subset(song_mds, Experimental_group %in% c("Swedish", "Dutch"))
 data_subsong_SN <- droplevels(data_subsong_SN)
 
 ## Need CV=TRUE to get to the confusion matrix 
-lda_SN <- lda(Population2 ~ pc_1_value + pc_2_value + pc_3_value +
+lda_SN <- lda(Experimental_group ~ pc_1_value + pc_2_value + pc_3_value +
                 pc_4_value + pc_5_value + pc_6_value+pc_7_value+pc_8_value+pc_9_value+
                 pc_10_value,
               data = data_subsong_SN, CV = TRUE)
 
 ## Assess the classification accuracy 
-ctsongSN <- table(data_subsong_SN$Population2, lda_SN$class)
+ctsongSN <- table(data_subsong_SN$Experimental_group, lda_SN$class)
 ctsongSN # Confusion matrix 
 diag(prop.table(ctsongSN, 1)) #accuracy of LDA for each experimental group
 
@@ -45,7 +45,7 @@ sum(diag(ctsongSN))/sum(ctsongSN)
 
 ## Get a new dataset with the LD values for all the Swedish and Dutch songs ##
 #### Project a new data set using the previous LD functions. First, you have to re-run the LDA with CV = FALSE
-lda_SN <- lda(formula = Population2 ~ pc_1_value + pc_2_value + pc_3_value +
+lda_SN <- lda(formula = Experimental_group ~ pc_1_value + pc_2_value + pc_3_value +
                 pc_4_value + pc_5_value + pc_6_value+pc_7_value+pc_8_value+pc_9_value+
                 pc_10_value, data = data_subsong_SN, CV = FALSE)
 lda_SN
@@ -54,7 +54,7 @@ predictSN.ld <- predict(object = lda_SN, newdata = data_subsong_SN) ##Prediction
 combinedSN <- cbind(data_subsong_SN, predictSN.ld) ##Combine the original dataset with the posterior probabilities and LD scores
 
 ##Create  the testing dataset for translocated males
-data_subsong_D <-  subset(song_mds, Population2 %in% c("Dutch egg"))
+data_subsong_D <-  subset(song_mds, Experimental_group %in% c("Dutch egg"))
 data_subsong_D <- droplevels(data_subsong_D)
 
 ## Projection of translocated males songs onto Dutch and Swedish songs
@@ -62,7 +62,7 @@ D_SN.ld <- predict(object = lda_SN, newdata = data_subsong_D) ##Predict posterio
 combined_D <- cbind(data_subsong_D, D_SN.ld) ##Combine the dataset to get the LD and classification scores for all songs of translocted males
 
 ## Assess the classification accuracy of Dutch egg songs
-ctsongD <- table(data_subsong_D$Population2, D_SN.ld$class)
+ctsongD <- table(data_subsong_D$Experimental_group, D_SN.ld$class)
 ctsongD # Confusion matrix
 diag(prop.table(ctsongD, 1)) #rate at which Dutch egg songs get misclassified as Dutch
 
@@ -73,13 +73,13 @@ combined_SND <- rbind(combinedSN, combined_D)
 
 ## Calculate effect size between the different experimental groups:
 #Create vectors with variable of interest from each experimental group
-DE <- combined_SND %>% filter(Population2 == 'Dutch egg')
+DE <- combined_SND %>% filter(Experimental_group == 'Dutch egg')
 DE <- DE$LD1
 
-Se <- combined_SND %>% filter(Population2 == 'Swedish')
+Se <- combined_SND %>% filter(Experimental_group == 'Swedish')
 Se <- Se$LD1
 
-Du <- combined_SND %>% filter(Population2 == 'Dutch')
+Du <- combined_SND %>% filter(Experimental_group == 'Dutch')
 Du <- Du$LD1
 
 #Check effect size
@@ -88,9 +88,9 @@ cohen.d(Se, Du) #large: Between Swedish and Dutch birds
 cohen.d(DE, Du) #large: Between Dutch and Dutch egg birds
 
 ## Linear regression of experimental group and Age on LD scores of all birds:
-model <- glmmTMB(LD1 ~ Population2  + Age +(1|Individual), data =combined_SND, dispformula = ~Population2,family = gaussian())
-car::Anova(model) ##Overall effect of Population and age
-emmeans(model, list(pairwise~Population2)) ##Post-hoc tests
+model <- glmmTMB(LD1 ~ Experimental_group  + Age +(1|Individual), data =combined_SND, dispformula = ~Experimental_group,family = gaussian())
+car::Anova(model) ##Overall effect of experimental group and age
+emmeans(model, list(pairwise~Experimental_group)) ##Post-hoc tests
 
 ## Check model diagnostics using DHARMA package
 simulationOutput <- simulateResiduals(fittedModel = model, plot = F)
@@ -101,7 +101,7 @@ hist(residuals(model))
 plot_model(model, type = "re")
 
 ##Run model again without dispformula to get within and between individual variance
-model_variance <- glmmTMB(LD1 ~ Population2  + Age +(1|Individual), data =combined_SND, family = gaussian())
+model_variance <- glmmTMB(LD1 ~ Experimental_group  + Age +(1|Individual), data =combined_SND, family = gaussian())
 summary(model_variance)
 
 ## Find the relationship between within and between individual variance for each experimental group: (Comment from #reviewer 2)
@@ -110,22 +110,22 @@ model_dutchegg <- glmmTMB(LD1 ~ 1 +(1|Individual), data =combined_D,family = gau
 summary(model_dutchegg) #check variance explained by random effect
 
 # 2) Swedish birds:
-combined_S <- combinedSN %>% filter(Population2 == 'Swedish')
+combined_S <- combinedSN %>% filter(Experimental_group == 'Swedish')
 model_Swedish <- glmmTMB(LD1 ~1 +(1|Individual), data =combined_S,family = gaussian())
 summary(model_Swedish)
 
 # 3) Dutch birds:
-combined_Du <- combinedSN %>% filter(Population2 == 'Dutch')
+combined_Du <- combinedSN %>% filter(Experimental_group == 'Dutch')
 model_Dutch <- glmmTMB(LD1 ~1 +(1|Individual), data =combined_Du,family = gaussian())
 summary(model_Dutch)
 
 ## Check if results of linear regression still hold when you remove individual with extremely Dutch-like song: response to comment from reviewer #3
 LDsong_outlier <- combined_SND%>%
   filter(Individual != 'DUTCH_DA.64239') #Create dataset
-model_outlier <- glmmTMB(LD1 ~ Population2  + Age +(1|Individual), 
-                         data = LDsong_outlier, dispformula = ~Population2,family = gaussian()) #Linear regression
+model_outlier <- glmmTMB(LD1 ~ Experimental_group  + Age +(1|Individual), 
+                         data = LDsong_outlier, dispformula = ~Experimental_group,family = gaussian()) #Linear regression
 car::Anova(model_outlier) #Overall effect of experimental group
-emmeans(model_outlier, list(pairwise~Population2)) #post-hoc tests
+emmeans(model_outlier, list(pairwise~Experimental_group)) #post-hoc tests
 simulationoutlier <- simulateResiduals(fittedModel = model_outlier, plot = F) #Check model fit
 plot(simulationoutlier) #residuals look good
 
@@ -133,12 +133,12 @@ plot(simulationoutlier) #residuals look good
 
 ## Aggregate LD scores per individual of each experimental group
 combined_SNDind <- combined_SND %>%
-  group_by(Population2,Individual) %>%
+  group_by(Experimental_group,Individual) %>%
   summarise(LD1 = mean(LD1))
 
 ##Plot the density distribution of LD scores of each group
-LD1_distribution<- ggplot(combined_SNDind, aes(LD1, colour = Population2, fill = Population2)) + 
-  geom_density(aes(alpha = factor(Population2)), kernel = c("gaussian"), n = 1002, lwd = 2) + theme(legend.position = "none") +   scale_fill_manual(values = c("#F8766D",  "#00BFC4", "#CC7CFF")) + theme_bw() + 
+LD1_distribution<- ggplot(combined_SNDind, aes(LD1, colour = Experimental_group, fill = Experimental_group)) + 
+  geom_density(aes(alpha = factor(Experimental_group)), kernel = c("gaussian"), n = 1002, lwd = 2) + theme(legend.position = "none") +   scale_fill_manual(values = c("#F8766D",  "#00BFC4", "#CC7CFF")) + theme_bw() + 
   scale_colour_manual(values = c('#ac1308',  '#005f62', '#7000b7')) +
   labs(x = "LD1 song scores", y = "Probability Density") +
   xlim(c(-3,3.5)) + ylim(c(0,1.25)) + theme(legend.position = 'none') +
@@ -151,21 +151,21 @@ LD1_distribution<- ggplot(combined_SNDind, aes(LD1, colour = Population2, fill =
   theme(axis.title.x = element_text(vjust = -0.5), 
         axis.title.y = element_text(hjust = 0.4)) + 
   theme(axis.line = element_line(colour = 'black', size = 1.0), axis.ticks = element_line(colour = "black", size = 1.0))#+
-#geom_vline(data = dummy, aes(xintercept = median, color = Population2))
+#geom_vline(data = dummy, aes(xintercept = median, color = Experimental_group))
 LD1_distribution
 
 #Rearrange the groups for the boxplot
-combined_SNDind$Population2 <- factor(combined_SNDind$Population2, levels = c("Dutch", "Dutch egg", "Swedish"))
+combined_SNDind$Experimental_group <- factor(combined_SNDind$Experimental_group, levels = c("Dutch", "Dutch egg", "Swedish"))
 
 ##Plot the boxplot of LD scores per individual 
-LD1_boxplot <- ggplot(combined_SNDind, aes(y= Population2, x = LD1, colour = NULL, fill = Population2), size = 2) + 
-  geom_boxplot(aes(colour = Population2, alpha = 0.5), width = 0.5, fatten = 2, lwd=2) +
+LD1_boxplot <- ggplot(combined_SNDind, aes(y= Experimental_group, x = LD1, colour = NULL, fill = Experimental_group), size = 2) + 
+  geom_boxplot(aes(colour = Experimental_group, alpha = 0.5), width = 0.5, fatten = 2, lwd=2) +
   theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
                      panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
   theme(legend.position = "none") +  
   scale_fill_manual(values = c("#F8766D", "#CC7CFF",  "#00BFC4")) +  
   scale_colour_manual(values = c('#ac1308', '#7000b7', '#005f62')) +
-  geom_jitter(aes(colour = Population2),  width = 0.1, height = 0.2, alpha = 0.7, pch=21,size = 9, lwd = 1, stroke = 2) +
+  geom_jitter(aes(colour = Experimental_group),  width = 0.1, height = 0.2, alpha = 0.7, pch=21,size = 9, lwd = 1, stroke = 2) +
   theme(axis.title = element_text(size = 30)) +
   theme(axis.text = element_text(size = 25)) +  
   theme(axis.ticks.length=unit(.25, "cm")) +
@@ -180,12 +180,12 @@ LD1_boxplotdist
 ## 4) REPLICATE SUPPLEMENTARY FIGURE 1: : LD song distribution of 7 translocated males
 ##Create dataset with only Swedish individuals and make all individuals Swedish, since we want to plot all individuals at the same time
 combinedSplot <- combinedSN %>%
-  filter(Population2 == 'Swedish') %>%
+  filter(Experimental_group == 'Swedish') %>%
   mutate(Individual = 'Swedish')
 
 ##Create dataset with only Dutch individuals and make all individuals Dutch, since we want to plot all individuals at the same time
 combinedDplot <- combinedSN %>%
-  filter(Population2 == 'Dutch') %>%
+  filter(Experimental_group == 'Dutch') %>%
   mutate(Individual = 'Dutch')
 
 #Combine individual level data for Dutch egg individuals with Swedish and Dutch songs
@@ -218,7 +218,7 @@ indvariation_LDsongs
 ## 5) BOOTSTRAPPING ANALYSIS 
 
 ## This analysis is looking at how the mean of LD scores of Swedish indiviudals varies from Dutch egg individuals when you only take 7 Swedish individuals at a time
-swedish_list <- unique(subset(combined_SND, Population2 == 'Swedish')$Individual)
+swedish_list <- unique(subset(combined_SND, Experimental_group == 'Swedish')$Individual)
 
 #Initialise result vectors
 ld1_means <- NA
@@ -246,7 +246,7 @@ summary <- cbind(ld1_means, ld1_median, ld1_sd, ld1_var)
 summary <- as.data.frame(summary)
 
 ## What are the summary stats for the Dutch egg birds
-combined_SND %>% filter(Population2 == 'Dutch egg') %>% summarise(mean(LD1),median(LD1), sd(LD1), var(LD1))
+combined_SND %>% filter(Experimental_group == 'Dutch egg') %>% summarise(mean(LD1),median(LD1), sd(LD1), var(LD1))
 ## How often do you get Swedish individuals with a mean equal to or lower than Dutch egg birds from the bootstrapping analysis?
 summary %>% filter(ld1_means < 0.5865185)
 
@@ -264,17 +264,17 @@ hist_ld1means
 
 #Create dataset of Dutch and Swedish individuals, with means of all PC values per individual
 individual_SN <- data_subsong_SN %>%
-  group_by(Population2, Individual) %>%
+  group_by(Experimental_group, Individual) %>%
   summarise_all(funs(mean))
 
 ## Need CV=TRUE to get to the confusion matrix 
-lda_indSN <- lda(Population2 ~ pc_1_value + pc_2_value + pc_3_value +
+lda_indSN <- lda(Experimental_group ~ pc_1_value + pc_2_value + pc_3_value +
                    pc_4_value + pc_5_value + pc_6_value+pc_7_value+pc_8_value+pc_9_value+
                    pc_10_value,
                  data = individual_SN, CV = TRUE)
 
 ## Assess the classification accuracy 
-ctsongSN_ind <- table(individual_SN$Population2, lda_indSN$class)
+ctsongSN_ind <- table(individual_SN$Experimental_group, lda_indSN$class)
 ctsongSN_ind # Confusion matrix 
 diag(prop.table(ctsongSN_ind, 1)) #accuracy of LDA for each experimental group
 
@@ -283,7 +283,7 @@ sum(diag(ctsongSN_ind))/sum(ctsongSN_ind)
 
 ## Get a new dataset with the LD values for all the Swedish and Dutch songs ##
 #### Project a new data set using the previous LD functions. First, you have to re-run the LDA with CV = FALSE
-lda_indSN <- lda(formula = Population2 ~ pc_1_value + pc_2_value + pc_3_value +
+lda_indSN <- lda(formula = Experimental_group ~ pc_1_value + pc_2_value + pc_3_value +
                 pc_4_value + pc_5_value + pc_6_value+pc_7_value+pc_8_value+pc_9_value+
                 pc_10_value, data = individual_SN, CV = FALSE)
 lda_indSN
@@ -293,7 +293,7 @@ combinedSN_ind <- cbind(individual_SN, predictSN.ld_ind) ##Combine the original 
 
 ##Create  the testing dataset for translocated males
 individual_D <- data_subsong_D %>%
-  group_by(Population2, Individual) %>%
+  group_by(Experimental_group, Individual) %>%
   summarise_all(funs(mean))
 
 ## Projection of translocated males songs onto Dutch and Swedish songs
@@ -301,7 +301,7 @@ D_SN.ld_ind <- predict(object = lda_indSN, newdata = individual_D) ##Predict pos
 combined_D_ind <- cbind(individual_D, D_SN.ld_ind) ##Combine the dataset to get the LD and classification scores for all songs of translocted males
 
 ## Assess the classification accuracy of Dutch egg songs
-ctsongDind <- table(individual_D$Population2, D_SN.ld_ind$class)
+ctsongDind <- table(individual_D$Experimental_group, D_SN.ld_ind$class)
 ctsongDind # Confusion matrix
 diag(prop.table(ctsongDind, 1)) #rate at which Dutch egg songs get misclassified as Dutch
 
@@ -310,13 +310,13 @@ combined_SNDind <- rbind(combinedSN_ind, combined_D_ind)
 
 ## Check Effect size differences between the groups
 #Create vectors with varriable of interest from each group: Translocated males
-DE <- combined_SNDind %>% filter(Population2 == 'Dutch egg')
+DE <- combined_SNDind %>% filter(Experimental_group == 'Dutch egg')
 DE <- DE$x[,1]
 
-Se <- combined_SNDind %>% filter(Population2 == 'Swedish') #Swedish males
+Se <- combined_SNDind %>% filter(Experimental_group == 'Swedish') #Swedish males
 Se <- Se$x[,1]
 
-Du <- combined_SND %>% filter(Population2 == 'Dutch') #Dutch males
+Du <- combined_SND %>% filter(Experimental_group == 'Dutch') #Dutch males
 Du <- Du$x[,1]
 
 #Check effect size between Swedish and translocated males
@@ -324,9 +324,9 @@ cohen.d(Se, DE)
 
 ## Linear regression of experimental group on LD scores of all birds:
 ##Random effect of individual not needed because of averaged scores, 
-model_ind <- lm(x[,1] ~ Population2 , data =combined_SNDind)
-car::Anova(model_ind) #Overall variation of Population significiant
-emmeans(model_ind, list(pairwise~Population2)) ##Post-hoc tests
+model_ind <- lm(x[,1] ~ Experimental_group , data =combined_SNDind)
+car::Anova(model_ind) #Overall variation of experimental group significiant
+emmeans(model_ind, list(pairwise~Experimental_group)) ##Post-hoc tests
 
 ## Check model diagnostics using DHARMA package
 simulationOutput <- simulateResiduals(fittedModel = model_ind, plot = F)

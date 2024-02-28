@@ -100,7 +100,7 @@ combined_sylSND%>% group_by(Experimental_group, class)%>% count()
 
 ## Step 2: clustering tendency
 ## Create dataset with only PC scores of all songs
-misclasSND_onlypc <- misdata_SND[c(16:25), drop = FALSE]
+misclasSND_onlypc <- misdata_SND[c(6:15), drop = FALSE]
 rownames(misclasSND_onlypc) <- misdata_SND$Song ##Attach which song rows come from 
 
 #Create a random dataset to check whether the syllable datatset differs from the random dataset

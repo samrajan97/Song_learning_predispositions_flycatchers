@@ -73,7 +73,7 @@ Number of cases/rows: 769
 
 1. Variable List:
 
-- "Population2" = Experimental group each individual belongs to (used in the final analysis): Swedish (Swedish birds), Dutch (Dutch birds), Dutch egg (Translocated males)
+- "Experimental_group" = Experimental group each individual belongs to: Swedish (Swedish birds), Dutch (Dutch birds), Dutch egg (Translocated males), Hybrids (Half Ducth-half Swedish birds)
 - "Individual" = Individual identity
 - "Song" = Identity of songs that an individual produces
 - "n_syllables" = First temporal measure, number of syllables in a song
@@ -96,7 +96,7 @@ Missing data codes: NA
 
 
 3) data_syllable_mds.xlsx
-Number of variables: 25
+Number of variables: 15
 
 Number of cases/rows: 11,718
 

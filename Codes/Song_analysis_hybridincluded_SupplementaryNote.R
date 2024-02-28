@@ -88,7 +88,7 @@ pwr.t2n.test(n1=38, d = 0.23, sig.level = 0.05, power = 0.2)
 combined_SNDHind <- combined_SNDH %>%
   group_by(Experimental_group,Individual) %>%
   summarise(LD1 = mean(LD1))
-combined_SNDHind$Experimental_group <- factor(combined_SNHind$Experimental_group, levels = c( 'Dutch', 'Dutch egg', 'Hybrid',  'Swedish'))
+combined_SNDHind$Experimental_group <- factor(combined_SNDHind$Experimental_group, levels = c( 'Dutch', 'Dutch egg', 'Hybrid',  'Swedish'))
 
 densityplotSNDH <- ggplot(combined_SNDHind, aes(x = LD1, y = Experimental_group, fill = Experimental_group, colour = Experimental_group), alpha = 0.8) +
   geom_density_ridges(scale = 0.9, quantile_lines = TRUE, quantiles = 2, lwd = 2, alpha = 0.6)+ #jittered_points = TRUE, point_size = 9, 
@@ -115,6 +115,7 @@ hybridswedish <- combined_SNDH %>%
   filter(Experimental_group != 'Dutch egg') %>%
   filter(Experimental_group != 'Dutch') 
 
+hybridswedish$Dutch_parentage <- as.factor(hybridswedish$Dutch_parentage)
 hybridswedish$Dutch_parentage <- droplevels(hybridswedish$Dutch_parentage)
 hybridswedish$Dutch_parentage <- recode_factor(hybridswedish$Dutch_parentage,
                                           "Swedish" = "Swedish",  

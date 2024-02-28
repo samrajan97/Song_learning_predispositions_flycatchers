@@ -20,23 +20,23 @@ library(dendextend) #for analysis of dendograms
 syl_mds <- read_excel("~/data_syllable_mds.xlsx") 
 attach(syl_mds)
 
-## Make Population2 a factor
-syl_mds$Population2 <- factor(syl_mds$Population2, levels = c("Dutch", "Swedish", "Hybrid", "Dutch egg"))
-levels(syl_mds$Population2)
+## Make Experimental_group a factor
+syl_mds$Experimental_group <- factor(syl_mds$Experimental_group, levels = c("Dutch", "Swedish", "Hybrid", "Dutch egg"))
+levels(syl_mds$Experimental_group)
 
 ## LINEAR DISCRIMINANT ANALYSIS ##
 
 ## Subset the swedish and dutch syllable
-data_subsyl_SN <-  subset(syl_mds, Population2 %in% c("Swedish", "Dutch"))
+data_subsyl_SN <-  subset(syl_mds, Experimental_group %in% c("Swedish", "Dutch"))
 data_subsyl_SN <- droplevels(data_subsyl_SN)
 
 ##Need CV=TRUE to get to the confusion matrix
-lda_sylSN <- lda(Population2 ~ pc_1_value + pc_2_value + pc_3_value
+lda_sylSN <- lda(Experimental_group ~ pc_1_value + pc_2_value + pc_3_value
                  +pc_4_value + pc_5_value + pc_6_value+pc_7_value+pc_8_value+pc_9_value+pc_10_value,
                  data = data_subsyl_SN, CV = TRUE)
 
 #these lines allow you to assess the classification accuracy
-ctsylSN <- table(data_subsyl_SN$Population2, lda_sylSN$class)
+ctsylSN <- table(data_subsyl_SN$Experimental_group, lda_sylSN$class)
 ctsylSN ## Confusion matrix 
 diag(prop.table(ctsylSN, 1)) ##accuracy of LDA for each group
 
@@ -46,7 +46,7 @@ sum(diag(ctsylSN))/sum(ctsylSN)
 ##get a new dataset with the LD1 values for all the Swedish and Dutch syllables
 ####these lines project a new data set using the previous LD functions. First, you have to re-run the LDA with CV = FALSE
 ##Just a trial without sub sampling the data
-lda_sylSN <- lda(formula = Population2 ~ pc_1_value + pc_2_value + pc_3_value +
+lda_sylSN <- lda(formula = Experimental_group ~ pc_1_value + pc_2_value + pc_3_value +
                    pc_4_value + pc_5_value + pc_6_value+pc_7_value+pc_8_value+pc_9_value+
                    pc_10_value, data = data_subsyl_SN, CV = FALSE)
 lda_sylSN
@@ -56,7 +56,7 @@ predictsylSN.ld <- predict(object = lda_sylSN, newdata = data_subsyl_SN) ##Predi
 combined_sylSN <- cbind(data_subsyl_SN, predictsylSN.ld) ##Combine the original dataset with the posterior probabilities and LD1 scores
 
 ##Create  the testing dataset of the translocated males syllables
-data_subsyl_D <-  subset(syl_mds, Population2 %in% c("Dutch egg"))
+data_subsyl_D <-  subset(syl_mds, Experimental_group %in% c("Dutch egg"))
 data_subsyl_D <- droplevels(data_subsyl_D)
 
 ## PART1:  projection of translocated males syllables onto Dutch and Swedish syllables
@@ -64,7 +64,7 @@ D_sylSN.ld <- predict(object = lda_sylSN, newdata = data_subsyl_D) ##Predict pos
 combined_sylD <- cbind(data_subsyl_D, D_sylSN.ld) ##Combine the dataset to get the LD1 and classification scores for all songs
 
 #these lines allow you to assess the classification accuracy
-ctsylD <- table(data_subsyl_D$Population2, D_sylSN.ld$class)
+ctsylD <- table(data_subsyl_D$Experimental_group, D_sylSN.ld$class)
 ctsylD ## Confusion matrix 
 diag(prop.table(ctsylD, 1)) ##accuracy of LDA for Dutch egg birds
 
@@ -72,8 +72,8 @@ diag(prop.table(ctsylD, 1)) ##accuracy of LDA for Dutch egg birds
 combined_sylSND<- rbind(combined_sylSN, combined_sylD)
 
 ## Replicate Figure 2A:
-LD_syllables <- ggplot(combined_sylSND, aes(LD1, colour = Population2, fill = Population2)) + 
-  geom_density(aes(alpha = factor(Population2)), kernel = c("gaussian")) + theme(legend.position = "none") +   
+LD_syllables <- ggplot(combined_sylSND, aes(LD1, colour = Experimental_group, fill = Experimental_group)) + 
+  geom_density(aes(alpha = factor(Experimental_group)), kernel = c("gaussian")) + theme(legend.position = "none") +   
   scale_fill_manual(values = c("#F8766D",  "#00BFC4", "#CC7CFF")) + theme_bw() + 
   scale_colour_manual(values = c('#ac1308',  '#005f62', '#7000b7')) +
   labs(x = "LD syllable scores", y = "Probability Density") +
@@ -96,7 +96,7 @@ misdata_SND <- combined_sylSND %>%
   filter(class == "Dutch") 
 
 ##sample sizes of how many syllables from each group is classified as Dutch
-combined_sylSND%>% group_by(Population2, class)%>% count() 
+combined_sylSND%>% group_by(Experimental_group, class)%>% count() 
 
 ## Step 2: clustering tendency
 ## Create dataset with only PC scores of all songs
@@ -165,15 +165,15 @@ optimumclustersSND
 sub_grp <- cutree(dendogram, k = 215)
 cluster_SND <- mutate(misdata_SND, cluster = sub_grp)
 
-##Create a column for the total number of misclassified syllables per population
+##Create a column for the total number of misclassified syllables per experimental group
 cluster_SND <- cluster_SND %>%
-    group_by(Population2)%>%
+    group_by(Experimental_group)%>%
     mutate(totaln = n()) 
   
 ## Step 6: create a summary dataset about proportions of syllables from each experimental group in the cluster
-##First create the proportion with which each population is present in the cluster, normalised by the total number of misclassified syllables from each group
+##First create the proportion with which each experimental group is present in the cluster, normalised by the total number of misclassified syllables from each group
 propSND <- cluster_SND %>%
-    group_by(cluster,Population2,totaln) %>%
+    group_by(cluster,Experimental_group,totaln) %>%
     summarise(n = n()) %>%
     mutate(prop = n/totaln)
   
@@ -181,9 +181,9 @@ propSND <- cluster_SND %>%
 propSND <- propSND %>%
     group_by(cluster) %>%
     mutate(Present = case_when(
-      any("Dutch egg" %in% Population2) ~ "1"
+      any("Dutch egg" %in% Experimental_group) ~ "1"
     )) %>%
-    filter(Population2 != "Dutch egg")
+    filter(Experimental_group != "Dutch egg")
 propSND[is.na(propSND)] <- "0"
 propSND$Present <- as.numeric(propSND$Present) #Dutch egg syllables present or not?
   
@@ -197,15 +197,15 @@ propSND <- propSND %>%
 ## That is, the proportion of syllables originating from the Swedish population
 ##create dataset with only values of Swedish proportion for each cluster
 propSD <- propSND%>%
-    filter(Population2 == "Swedish")
+    filter(Experimental_group == "Swedish")
 ##Create another dataset for all those syllable clusters where there are no Swedish syllables
 propDD <- propSND %>%
-    filter(Population2 == "Dutch") %>%
+    filter(Experimental_group == "Dutch") %>%
     filter(relative_prop == 1) 
   
 ##Create column of 0 for the dataset with no Swedish syllables
 propDD["relative_prop"][propDD["relative_prop"] == 1] <- 0
-propDD["Population2"][propDD["Population2"] == "Dutch"] <- "Swedish"#change the population to Swedish
+propDD["Experimental_group"][propDD["Experimental_group"] == "Dutch"] <- "Swedish"#change the population to Swedish
 finalpropSND <- rbind(propSD,propDD)#Combine the two datasets
 finalpropSND$pop_present<- "Dutch egg"
 colnames(finalpropSND)[8] <- "Swedish_prop" ##Change column name to show that it is the proportion of Swedish syllables in the cluster
@@ -213,7 +213,7 @@ colnames(finalpropSND)[8] <- "Swedish_prop" ##Change column name to show that it
 ## Step 8:Account for individual differences of translocated males in syllable production
 ##For each cluster where there are dutch egg syllables, which Dutch egg individual is present and with how many syllables?
 indDE <- cluster_SND %>%
-    filter(Population2 == 'Dutch egg') %>%
+    filter(Experimental_group == 'Dutch egg') %>%
     dplyr::select(cluster, Individual) %>%
     group_by(cluster,Individual) %>%
     summarise(n = n()) %>%
@@ -221,7 +221,7 @@ indDE <- cluster_SND %>%
   
 ##dataset with how swedish each cluster is
 indSN <- finalpropSND %>%
-    dplyr::select(cluster, Population2, Swedish_prop, Present)
+    dplyr::select(cluster, Experimental_group, Swedish_prop, Present)
   
 ##For each individual, which cluster are they not a part of?
 #List of clusters

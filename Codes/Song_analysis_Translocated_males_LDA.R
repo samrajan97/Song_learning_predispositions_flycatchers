@@ -15,7 +15,7 @@ library(sjPlot) #Plotting of random effects
 library(effsize) #Effect size: Cohen's D
 
 ## Import dataset 
-song_mds <- read_excel("~/Desktop/Chapter1_Lundproject/Github_codes_data_MS/data_song_mds.xlsx") 
+song_mds <- read_excel("~/data_song_mds.xlsx") 
 attach(song_mds)
 
 ## Prepare data 

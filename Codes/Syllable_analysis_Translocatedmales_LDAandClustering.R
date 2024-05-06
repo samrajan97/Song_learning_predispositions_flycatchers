@@ -15,6 +15,7 @@ library(hopkins) #For hopkins statistics
 library(factoextra) #Plotting hopkins clustering
 library(cluster) #heirarchical clustering analysis
 library(dendextend) #for analysis of dendograms
+library(emmeans) #Posthoc tests
 
 ## Import dataset 
 syl_mds <- read_excel("~/data_syllable_mds.xlsx") 
@@ -38,6 +39,7 @@ lda_sylSN <- lda(Experimental_group ~ pc_1_value + pc_2_value + pc_3_value
 #these lines allow you to assess the classification accuracy
 ctsylSN <- table(data_subsyl_SN$Experimental_group, lda_sylSN$class)
 ctsylSN ## Confusion matrix 
+chisq.test(ctsylSN)
 diag(prop.table(ctsylSN, 1)) ##accuracy of LDA for each group
 
 ## accuracy of lda model over all categories
@@ -55,6 +57,11 @@ lda_sylSN
 predictsylSN.ld <- predict(object = lda_sylSN, newdata = data_subsyl_SN) ##Prediction to get the LD1 scores for all Swedish and Dutch syllables
 combined_sylSN <- cbind(data_subsyl_SN, predictsylSN.ld) ##Combine the original dataset with the posterior probabilities and LD1 scores
 
+model <- glmmTMB(LD1 ~ Experimental_group + (1|Individual), data =combined_sylSN,
+                 dispformula = ~Experimental_group, family = gaussian())
+car::Anova(model)
+summary(model)
+
 ##Create  the testing dataset of the translocated males syllables
 data_subsyl_D <-  subset(syl_mds, Experimental_group %in% c("Dutch egg"))
 data_subsyl_D <- droplevels(data_subsyl_D)
@@ -71,7 +78,7 @@ diag(prop.table(ctsylD, 1)) ##accuracy of LDA for Dutch egg birds
 ##Combine dataset of posterior probabilties of LD syllable scores of translocated males with Dutch and Swedish syllables
 combined_sylSND<- rbind(combined_sylSN, combined_sylD)
 
-## Replicate Figure 2A:
+## Replicate Figure 3A:
 LD_syllables <- ggplot(combined_sylSND, aes(LD1, colour = Experimental_group, fill = Experimental_group)) + 
   geom_density(aes(alpha = factor(Experimental_group)), kernel = c("gaussian")) + theme(legend.position = "none") +   
   scale_fill_manual(values = c("#F8766D",  "#00BFC4", "#CC7CFF")) + theme_bw() + 
@@ -117,9 +124,9 @@ euc_randomSND <- dist(random_misclasSND_onlypc, method = "euclidean")
 hopkins(misclasSND_onlypc) #0.99= high clusterability
 hopkins(random_misclasSND_onlypc) #0.50, random clustering
 
+## This code takes a long time to run, run only if necessary
 ##produce heat maps to see clustering tendency
 plotclus_misclassSND <-fviz_dist(euc_misclasSND)
-## This code takes a long time to run, run only if necessary
 plotclus_misclassSND
 plotclus_randommisclassSND <- fviz_dist(euc_randomSND)
 plotclus_randommisclassSND
@@ -136,15 +143,14 @@ dendogram <- as.dendrogram(hc2)
 # Step 4: What are the optimal number of clusters?
 
 #1) Global silhouette index for heirarchical clustering: 
-#run these lines only if you want to do it again, takes a long time
-#Otherwise just load in the excel sheet, code below
+#run these lines only if you want to do it again, takes a very very long time
+#Otherwise just load in the excel sheet with the results, code below
 n_clust <- fviz_nbclust(misclasSND_onlypc, hcut, k.max = 1000, method = "silhouette")+
   labs(subtitle = "Silhouette method")
 n_clust <- n_clust$data
 n_clust <- n_clust %>%
 mutate(diff = y - lag(y))
 
-## Replicate Figure S4:
 #Import clustering output from previous step
 n_clust <- read_excel("~/GSIclusteringoutput_syllables.xlsx") 
 attach(n_clust)
@@ -282,14 +288,16 @@ final_result$Present <- as.numeric(final_result$Present)
   
 ##Models for the relationship between Presence and absence and proportion ofSwedish syllables in clusters
 log_indDE <- glmmTMB(Present ~ Swedish_prop  + (1|Individual) + (1|cluster), family = binomial, data = final_result)
+log_intercept <- glmmTMB(Present ~ 1  + (1|Individual) + (1|cluster), family = binomial, data = final_result)
+anova(log_indDE, log_intercept)
 summary(log_indDE) 
 car::Anova(log_indDE)
-  
+
 #Check residuals
 simulationOutputlog <- simulateResiduals(fittedModel = log_indDE, plot = F)
 plot(simulationOutputlog) ## everything looks good
   
-##Replicate Figure 2C
+##Replicate Figure 3C
 final_result <- final_result %>% mutate(pop_present = 'Dutch egg')
 logisticpredicted <- ggplot(final_result, aes(x = Swedish_prop, y = Present, colour = pop_present)) +
   geom_jitter(data = finalpropSND, aes(x = Swedish_prop, y = Present), 
@@ -308,7 +316,7 @@ logisticpredicted <- ggplot(final_result, aes(x = Swedish_prop, y = Present, col
   theme(axis.title.x = element_text(vjust = -0.05)) 
 logisticpredicted
   
-##Replicate Figure S6:
+##Replicate Figure S2:
 ##Reorder individuals to match Figure S1
 final_result$Individual <- factor(final_result$Individual, levels = c('DUTCH_DA.64239','DUTCH_RNR_unknown_blal.onon',
                                                                       'DUTCH_DA.64597', 'DUTCH_DA.65911',
@@ -330,22 +338,20 @@ individualLR <- ggplot(final_result, aes(x = Swedish_prop, y = Present, fill = I
   theme(axis.title.x = element_text(vjust = -0.05))  + facet_wrap(.~Individual, nrow = 2)
 individualLR
 
-## Response to revier #3 comment:
-#Make a dataset where you have only those clusters where atleast 1 syllable from translocated male is present
-subset_dataind <- final_result %>%
-  group_by(cluster) %>%
-  filter(any(Present == 1))
+##Extra analysis shown only in methods
+## Distribution of clusters for only those clusters with a syllable present, i.e. y = 1. 
+final_result_only1 <- final_result %>%
+  filter(Present == 1) ##Keep only datapoints at y=1. 
 
-##Check the number of unique clusters, to see how many clusters we lose in the process
-length(unique(final_result$cluster))
-length(unique(subset_dataind$cluster))
-  
-##Make a model to check the likelihood of syllables from males present with prop of Swedish sylllables
-loghist <- glmmTMB(Present ~ Swedish_prop + (1|cluster) + (1|Individual), family = binomial, data = subset_dataind)
-summary(loghist) ##We get the same result as before
+#Create a binomial variable of whether proportion of swedish syllables in a cluster where syllables of translocated males,
+#is greater than or lesser than 0.5 
+final_result_only1 <- final_result_only1 %>%
+  mutate(binomial_0.5 = ifelse(Swedish_prop >0.5,1,0))
 
-#Check residuals
-simulationOutputlog <- simulateResiduals(fittedModel = loghist, plot = F)
-plot(simulationOutputlog) ## everything looks good
+# Fit mixed-effects logistic regression model
+model_binomial0.5 <- glmmTMB(binomial_0.5 ~ 1 + (1 |Individual) + (1 |cluster), 
+                             data = final_result_only1, 
+                             family = binomial)
 
+summary(model_binomial0.5) ##Same results as previous test
 

@@ -12,7 +12,7 @@ library(MASS) #for pc
 library(corrplot) #correlation matrix
 
 
-song_acoustics <- read_excel("~/Desktop/Chapter1_Lundproject/Github_codes_data_MS/rawsong_acoustics.xlsx") 
+song_acoustics <- read_excel("~/rawsong_acoustics.xlsx") 
 attach(song_acoustics)
 
 ## Convert columns to factors

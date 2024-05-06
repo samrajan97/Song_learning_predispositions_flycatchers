@@ -12,7 +12,7 @@ library(MASS) #for pc
 library(corrplot) #correlation matrix
 
 
-song_acoustics <- read_excel("~/rawsong_acoustics.xlsx") 
+song_acoustics <- read_excel("~/Desktop/Chapter1_Lundproject/Github_codes_data_MS/rawsong_acoustics.xlsx") 
 attach(song_acoustics)
 
 ## Convert columns to factors
@@ -37,7 +37,7 @@ plotting_song<- song_acoustics %>%
             syllable_gap = mean(syllable_gap), song_length = mean(song_length),
             tempo = mean(tempo))
 
-## Supplementary Table 4: mean values per population for all variable
+## Supplementary Table 3: mean values per population for all variable
 TableS4_tempo <- song_acoustics %>%
   group_by(Experimental_group) %>%
   summarise(n_syllables = mean(n_syllables), Syllable_length = mean(syllable_length), 
@@ -46,7 +46,9 @@ TableS4_tempo <- song_acoustics %>%
 
 # 1. Number of syllables
 m_nsyllables <- glmmTMB(n_syllables ~ Experimental_group + (1|Individual), dispformula = ~Experimental_group, family = poisson, data = song_acoustics)
+model_intnsyllables <- glmmTMB(n_syllables ~ 1 + (1|Individual), dispformula = ~Experimental_group, family = poisson, data = song_acoustics)
 car::Anova(m_nsyllables)  #overall variation
+anova(model_intnsyllables, m_nsyllables)
 emmeans(m_nsyllables, list(pairwise ~ Experimental_group)) #post hoc
 
 ## Plot number of syllables
@@ -61,8 +63,12 @@ n_syllables <- ggplot(plotting_song, aes(x= Experimental_group, y = n_syllables,
 n_syllables
 
 # 2. Syllable length
+model_intsyllength <- glmmTMB(syllable_length ~ 1 + (1|Individual), dispformula = ~Experimental_group, data = song_acoustics)
 m_syllength <- glmmTMB(syllable_length ~ Experimental_group + (1|Individual), dispformula = ~Experimental_group, data = song_acoustics)
+summary()
+anova(model_intsyllength, m_syllength)
 car::Anova(m_syllength)  #overall variation
+anova(model_intercept, m_syllength)
 emmeans(m_syllength, list(pairwise ~ Experimental_group)) #post hoc
 
 ## Plot syllable length
@@ -77,7 +83,9 @@ Syllable_length <- ggplot(plotting_song, aes(x= Experimental_group, y = Syllable
 Syllable_length
 
 # 3. Between syl gap
+m_intsyllablegap <- glmmTMB(syllable_gap ~ 1+ (1|Individual), dispformula = ~Experimental_group, data = song_acoustics)
 m_syllablegap <- glmmTMB(syllable_gap ~ Experimental_group + (1|Individual), dispformula = ~Experimental_group, data = song_acoustics)
+anova(m_intsyllablegap, m_syllablegap)
 car::Anova(m_syllablegap)  #overall variation
 
 ## Plot intersyllable gap length
@@ -92,7 +100,10 @@ Between_sylgap <- ggplot(plotting_song, aes(x= Experimental_group, y = syllable_
 Between_sylgap
 
 # 4. Song length
+m_intsong <- glmmTMB(song_length ~ 1 + (1|Individual), dispformula = ~Experimental_group, family = nbinom2, data = song_acoustics)
 m_song <- glmmTMB(song_length ~ Experimental_group + (1|Individual), dispformula = ~Experimental_group, family = nbinom2, data = song_acoustics)
+anova(m_intsong, m_song)
+summary(m_song)
 car::Anova(m_song) #overall variation
 
 ## Plot song length
@@ -107,7 +118,9 @@ song_length <- ggplot(plotting_song, aes(x= Experimental_group, y = song_length,
 song_length
 
 # 5. Tempo
+m_inttempo <- glmmTMB(tempo ~ 1 + (1|Individual), dispformula = ~Experimental_group, data = song_acoustics)
 m_tempo <- glmmTMB(tempo ~ Experimental_group + (1|Individual), dispformula = ~Experimental_group, data = song_acoustics)
+anova(m_inttempo, m_tempo)
 car::Anova(m_tempo)  #overall variation
 emmeans(m_tempo, list(pairwise ~ Experimental_group)) #post hoc
 
@@ -133,12 +146,20 @@ song_acoustics <- song_acoustics %>%
 cor_matrix_spectral <- cor(song_acoustics[c(11:19)])
 corrplot(cor_matrix_spectral, type="lower")
 
+##extract values
+# Convert the correlation matrix to a vector (excluding the diagonal)
+cor_values <- cor_matrix_spectral[upper.tri(cor_matrix_spectral)]
+mean(cor_values)
+sd(cor_values)
+min(cor_values)
+max(cor_values)
+
 # Run PCA on the correlation matrix, use scale and center = TRUE
 res.pca <- prcomp(song_acoustics[c(11:19)], center = TRUE, scale = TRUE)
-
 summary(res.pca) #proportion of variance explained by each PC and eigenvalues
+#Supplementary tavble 2
 
-res.pca #Loadings of the different variables on the PC
+res.pca #Loadings of the different variables on the PC, Supplementary Tavle 2
 
 # Extract the first nine principal components
 first_pc <- res.pca$x[, 1]
@@ -157,53 +178,70 @@ combined_pcdata <- data.frame(
   Experimental_group = as.factor(song_acoustics$Experimental_group),
   Individual = as.factor(song_acoustics$Individual),
   PC1 = first_pc, PC2 = second_pc, PC3 = third_pc, PC4 = fourth_pc, PC5 = fifth_pc,
-  PC6 = sixth_pc, PC7 = seventh_pc , PC8=  eighth_pc ,PC9= ninth_pc)
+  PC6 = sixth_pc, PC7 = seventh_pc , PC8=  eighth_pc,PC9= ninth_pc)
   
 
-# Table S4: Spectral variables
-TableS4_pc <- combined_pcdata %>%
+# Table: Spectral variables
+Table_pc <- combined_pcdata %>%
   group_by(Experimental_group) %>%
   summarise(mean(PC1), mean(PC2), mean(PC3), mean(PC4), mean(PC5), mean(PC6), 
             mean(PC7), mean(PC8), mean(PC9))
 
 # PC1: mixed model
+model_intpc1 <- glmmTMB(PC1 ~ 1 + (1|Individual), data = combined_pcdata)
 model_pc1 <- glmmTMB(PC1 ~ Experimental_group + (1|Individual), data = combined_pcdata)
+anova(model_intpc1, model_pc1)
 car::Anova(model_pc1)
 emmeans(model_pc1, list(pairwise ~ Experimental_group))
 
 # PC2: mixed model
+model_intpc2 <- glmmTMB(PC2 ~ 1 + (1|Individual), data = combined_pcdata)
 model_pc2 <- glmmTMB(PC2 ~ Experimental_group + (1|Individual), data = combined_pcdata)
+anova(model_intpc2, model_pc2)
 car::Anova(model_pc2)
-emmeans(model_pc2, list(pairwise ~ Experimental_group))
 
 # PC3: mixed model
+model_intpc3 <- glmmTMB(PC3 ~ 1 + (1|Individual), data = combined_pcdata)
 model_pc3 <- glmmTMB(PC3 ~ Experimental_group + (1|Individual), data = combined_pcdata)
+anova(model_intpc3, model_pc3)
 car::Anova(model_pc3)
 emmeans(model_pc3, list(pairwise ~ Experimental_group))
 
 # PC4: mixed model
+model_intpc4 <- glmmTMB(PC4 ~ 1 + (1|Individual), data = combined_pcdata)
 model_pc4 <- glmmTMB(PC4 ~ Experimental_group + (1|Individual), data = combined_pcdata)
+anova(model_intpc4, model_pc4)
 car::Anova(model_pc4)
 emmeans(model_pc4, list(pairwise ~ Experimental_group))
 
 # PC5: mixed model
+model_intpc5 <- glmmTMB(PC5 ~ 1 + (1|Individual), data = combined_pcdata)
 model_pc5 <- glmmTMB(PC5 ~ Experimental_group + (1|Individual), data = combined_pcdata)
+anova(model_intpc5, model_pc5)
 car::Anova(model_pc5)
 
 # PC6: mixed model
+model_intpc6 <- glmmTMB(PC6 ~ 1 + (1|Individual), data = combined_pcdata)
 model_pc6 <- glmmTMB(PC6 ~ Experimental_group + (1|Individual), data = combined_pcdata)
+anova(model_intpc6, model_pc6)
 car::Anova(model_pc6)
 emmeans(model_pc6, list(pairwise ~ Experimental_group))
 
 # PC7: mixed model
+model_intpc7 <- glmmTMB(PC7 ~ 1 + (1|Individual), data = combined_pcdata)
 model_pc7 <- glmmTMB(PC7 ~ Experimental_group + (1|Individual), data = combined_pcdata)
+anova(model_intpc7, model_pc7)
 car::Anova(model_pc7)
 
 # PC8: mixed model
+model_intpc8 <- glmmTMB(PC8 ~ 1 + (1|Individual), data = combined_pcdata)
 model_pc8 <- glmmTMB(PC8 ~ Experimental_group + (1|Individual), data = combined_pcdata)
+anova(model_intpc8, model_pc8)
 car::Anova(model_pc8)
 emmeans(model_pc8, list(pairwise ~ Experimental_group))
 
 # PC9: mixed model
+model_intpc9 <- glmmTMB(PC9 ~ 1 + (1|Individual), data = combined_pcdata)
 model_pc9 <- glmmTMB(PC9 ~ Experimental_group + (1|Individual), data = combined_pcdata)
+anova(model_intpc9, model_pc9)
 car::Anova(model_pc9)

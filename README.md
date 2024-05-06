@@ -19,14 +19,14 @@ This repository contains the following:
 - `Song_analysis_Translocated_males_LDA.R`
 - `rawacousticmeasures_songs.R`
 - `Syllable_analysis_Translocatedmales_LDAandClustering.R`
-- `Song_analysis_hybridincluded_SupplementaryNote.R`
+- `Song_analysis_hybridincluded_SupplementaryFigure3.R`
 
 Description of files and relationship between files:
 1. The dataset `data_song_mds.xlsx` was used for the analysis of songs of the translocated males and analyses can be reproduced using the R script `Song_analysis_Translocated_males_LDA.R`. The code can also be used to replicate Figure 1B and Figure S1 and S2.
 2. The dataset `rawsong_acoustics.xlsx` was used for the analysis of spectral and temporal variables contributing to the acoustic differences between groups. It can be reproduced using the R script `rawacousticmeasures_songs.R`
 3. The dataset `data_syllable_mds.xlsx` was used for the analysis of syllables of the translocated males and analyses can be reproduced using the R script `Song_analysis_Translocated_males_LDA.R`. The code can also be used to replicate Figure 2A,C; Figure S4-S6. 
 4. The dataset `GSIclusteringoutput_syllables.xlsx` is the output of code used in (3) that is too heavy to run and is therefore, attached here. This dataset is the global silhouette index used to find the optimum number of clusters of syllables of individuals used in the translocation experiment. 
-5. The code `Song_analysis_hybridincluded_SupplementaryNote.R` can be used to replicate the results for Supplementary Figure 3.  
+5. The code `Song_analysis_hybridincluded_SupplementaryFigure3.R` can be used to replicate the results for Supplementary Figure 3.  
 
 ## Methods to generate data
 
@@ -80,17 +80,17 @@ Number of cases/rows: 769
 - "syllable_length" = Second temporal measure, mean syllable length in a song
 - "song_length" = Third temporal measure, song length
 - "syllable_gap" = Fourth temporal measure, mean intersyllable gap length in a song
-- "tempo" = Fifth temporal measure, number of syllables/song length
-- "Overall_Min_Freq" = Mean minimum frequency of syllables in a song
-- "Overall_Max_Freq" = Mean maximum frequency of syllables in a song
-- "Mean_frequency_Mean" = Mean of mean frequency of syllables in a song
-- "Mean frequency Variance" = Mean of mean frequency variance of syllables in a song
-- "Mean_frequency_Maximum" = Mean of mean frequency maximum of syllables in a song
-- "Mean_frequency_Minimum" = Mean of mean frequency minimum of syllables in a song
+- "tempo" = Fifth temporal measure, number of syllables in a song/song length
+- "Overall_Min_Freq" = Mean of minimum frequency of syllables in a song
+- "Overall_Max_Freq" = Mean of maximum frequency of syllables in a song
+- "Mean_frequency_Mean" = Mean of the mean frequency of syllables in a song
+- "Mean frequency Variance" = Mean of the variance in mean frequency across syllables in a song
+- "Mean_frequency_Maximum" = Mean of the maximum mean frequency of syllables in a song
+- "Mean_frequency_Minimum" = Mean of the minimum mean frequency of syllables in a song
 - "Mean frequency Start" = Mean of mean frequency at the start of syllables in a song
 - "Mean frequency End" = Mean of mean frequency at the end of syllables in a song
-- "Wiener_entropy_Mean" = Mean of mean wiener entropy of syllables in a song
-- "Wiener_entropy_Variance" = Mean of wiener entropy variance of syllables in a song
+- "Wiener_entropy_Mean" = Mean of the mean wiener entropy of syllables in a song
+- "Wiener_entropy_Variance" = Mean of the variance in wiener entropy across syllables in a song
 
 Missing data codes: NA
 
